@@ -411,10 +411,13 @@ function spawnBurst(canvas, options) {
     count = 24,
     colors = ['#ffffff'],
     sizeRange = [3, 6],
+    lengthRange = [8, 16], // for the 'strand' shape
     speedRange = [80, 220],
     gravity = 300,
+    drag = 0, // per-second multiplicative velocity decay, 0 = none (pure ballistic)
     lifespanMs = 700,
-    shape = 'circle', // 'circle' | 'shard' (small rotating rectangular chips, for debris-style breaks)
+    shape = 'circle', // fallback shape when `shapes` isn't given
+    shapes, // optional array for a per-particle random shape pick, e.g. ['shard', 'shard', 'strand'] (duplicate entries bias the odds)
   } = options;
 
   const particles = [];
@@ -427,9 +430,12 @@ function spawnBurst(canvas, options) {
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed - 100,
       size: sizeRange[0] + Math.random() * (sizeRange[1] - sizeRange[0]),
+      length: lengthRange[0] + Math.random() * (lengthRange[1] - lengthRange[0]),
       color: colors[Math.floor(Math.random() * colors.length)],
+      shape: shapes && shapes.length ? shapes[Math.floor(Math.random() * shapes.length)] : shape,
       rotation: Math.random() * Math.PI * 2,
-      rotationSpeed: (Math.random() - 0.5) * 12,
+      rotationSpeed: (Math.random() - 0.5) * 14,
+      curve: (Math.random() - 0.5) * 0.6, // slight bend, so 'strand' pieces read as flexible fiber
       born: performance.now(),
     });
   }
@@ -449,6 +455,11 @@ function spawnBurst(canvas, options) {
       if (age >= lifespanMs) continue;
       stillAlive = true;
 
+      if (drag) {
+        const decay = Math.exp(-drag * dt);
+        p.vx *= decay;
+        p.vy *= decay;
+      }
       p.vy += gravity * dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
@@ -456,12 +467,24 @@ function spawnBurst(canvas, options) {
 
       ctx.globalAlpha = 1 - age / lifespanMs;
       ctx.fillStyle = p.color;
+      ctx.strokeStyle = p.color;
 
-      if (shape === 'shard') {
+      if (p.shape === 'shard') {
         ctx.save();
         ctx.translate(p.x, p.y);
         ctx.rotate(p.rotation);
         ctx.fillRect(-p.size / 2, -p.size / 3, p.size, p.size * 0.66);
+        ctx.restore();
+      } else if (p.shape === 'strand') {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rotation);
+        ctx.lineWidth = Math.max(p.size * 0.18, 0.6);
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-p.length / 2, 0);
+        ctx.quadraticCurveTo(p.curve * p.length, -p.length * 0.3, p.length / 2, 0);
+        ctx.stroke();
         ctx.restore();
       } else {
         ctx.beginPath();

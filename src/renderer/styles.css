@@ -38,6 +38,17 @@ html, body {
   display: none;
 }
 
+.charm-inner {
+  /* The flip's squash (scaleX) and the swing's tilt (rotate) are applied
+     on separate elements — this one and its parent `.charm` — rather
+     than combined into one transform. A non-uniform scale composed with
+     a rotation in a single matrix shears the shape (looks skewed, not
+     tilted) once the rotation angle is more than a few degrees, and the
+     swing tilt alone ranges up to 35°. Nesting keeps each transform in
+     its own local space so they compose cleanly instead of shearing. */
+  transform-origin: top center;
+}
+
 .charm-image {
   display: block;
   height: 220px;
@@ -99,6 +110,34 @@ html, body {
 @keyframes ritual-glow-pulse {
   0% { opacity: 0.75; transform: translate(-50%, 0) scale(0.94); }
   100% { opacity: 1; transform: translate(-50%, 0) scale(1.06); }
+}
+
+.ritual-shatter-overlay {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(0.4);
+  opacity: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.35));
+  transition: transform 0.16s cubic-bezier(0.3, 1.6, 0.5, 1), opacity 0.08s ease;
+  /* The source photo has a piece of shell sliced off right at its own
+     right edge — baked into the pixels, so no amount of scaling the
+     whole image avoids it. Giving the element a narrower aspect ratio
+     than the source and covering+left-aligning crops that edge away
+     instead of showing it. */
+  object-fit: cover;
+  object-position: 0% 45%;
+}
+
+.ritual-shatter-overlay.visible {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+
+.ritual-shatter-overlay.fading {
+  opacity: 0;
+  transition: opacity 0.45s ease;
 }
 
 .charm-string {

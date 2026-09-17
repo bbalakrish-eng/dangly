@@ -1,4 +1,5 @@
 const charm = document.getElementById('charm');
+const charmInner = document.getElementById('charmInner');
 const canvas = document.getElementById('effects');
 const pet = document.getElementById('pet');
 const petGlyph = pet.querySelector('.pet-glyph');
@@ -14,6 +15,8 @@ let charmLoopHandle = null;
 let interactiveEl = null; // element eligible for click-through + click reactions
 let displayInfo = null;
 let breakResetTimer = null;
+let breakThrowRAF = null;
+let ritualRestPosition = null; // { left, top } captured just before a break's throw starts
 let flameAnimationHandle = null;
 
 function computeGroundY() {
@@ -45,7 +48,11 @@ function computeFlip(elapsed) {
   const wave = Math.sin(2 * Math.PI * envelope);
   const depth = Math.abs(wave);
   return {
-    scaleX: 1 - 0.18 * depth,
+    // A round charm (the evil eye) has no flat "edge" the way a coin or
+    // medallion does, so squashing it reads as an oval/distorted shape
+    // rather than a 3D turn — toned down well below the original 18% so
+    // it stays a subtle wobble instead of a visible egg shape.
+    scaleX: 1 - 0.06 * depth,
     rotation: 1.8 * wave * Math.sin(Math.PI * t),
     brightness: 1 - 0.03 * depth,
   };
@@ -93,7 +100,14 @@ function startCharmLoop() {
     // as it swings, not just translate while staying upright. Separate
     // from (and added to) the brief coin-flip rotation above.
     const swingTilt = Math.max(-35, Math.min(35, charmPhysics.getSwingAngleDegrees()));
-    charm.style.transform = `scaleX(${flip.scaleX}) rotate(${flip.rotation + swingTilt}deg)`;
+    // Split across two elements rather than combined into one transform:
+    // scaleX (non-uniform) composed with a large rotate in a single
+    // matrix shears the shape into a skewed-looking parallelogram instead
+    // of a clean tilt, and swingTilt alone ranges up to 35°. Keeping the
+    // swing's rotation on `charm` and the flip's squash+rotation on the
+    // nested `charmInner` keeps each transform in its own local space.
+    charm.style.transform = `rotate(${swingTilt}deg)`;
+    charmInner.style.transform = `scaleX(${flip.scaleX}) rotate(${flip.rotation}deg)`;
     charm.style.filter = `drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4)) brightness(${flip.brightness})`;
 
     charmLoopHandle = requestAnimationFrame(frame);
@@ -108,6 +122,7 @@ function stopCharmLoop() {
   charmStringSvg.classList.add('hidden');
   charm.style.transform = '';
   charm.style.filter = '';
+  charmInner.style.transform = '';
   triggerCharmFlip = () => {};
 }
 
@@ -205,21 +220,21 @@ function positionBeads() {
 }
 
 function renderCharmVisual(item) {
-  charm.innerHTML = '';
+  charmInner.innerHTML = '';
   clearTimeout(breakResetTimer);
 
   if (item && item.image) {
     const img = document.createElement('img');
     img.className = item.type === 'ritual' ? 'charm-image ritual-image' : 'charm-image';
     img.draggable = false;
-    charm.appendChild(img);
+    charmInner.appendChild(img);
     window.overlayAPI.resolveAssetPath(item.image).then((url) => {
       img.src = url;
     });
     return;
   }
 
-  charm.textContent = item ? item.glyph : '🍀';
+  charmInner.textContent = item ? item.glyph : '🍀';
 }
 
 function teardownCurrent() {
@@ -233,6 +248,26 @@ function teardownCurrent() {
   }
   stopCharmLoop();
   clearTimeout(breakResetTimer);
+  if (breakThrowRAF) {
+    // Without this, switching away mid-break (before its throw finishes
+    // or its reset fires) left the loop's callback armed — it would go on
+    // to run triggerBreakImpact()/the reset against `charm` and whatever
+    // NEXT item now occupies it (appending the old ritual's shatter photo
+    // into it, hiding its image, or later snapping its position back to
+    // the old ritual's coordinates), producing a stray duplicate/misplaced
+    // visual on a completely unrelated item.
+    cancelAnimationFrame(breakThrowRAF);
+    breakThrowRAF = null;
+  }
+  ritualRestPosition = null;
+  // If a drag was ever left mid-gesture when switching items (isDragging
+  // stuck true), the new item would silently inherit it: the very next
+  // mousemove would run `charmPhysics.dragTo(cursor)` for a freshly
+  // selected charm and it would snap to wherever the cursor currently is
+  // instead of hanging from its own anchor, looking like it's "stuck" in
+  // the middle of the screen with no dragging having happened at all.
+  isDragging = false;
+  didDrag = false;
   if (flameAnimationHandle) {
     // A persistent flame (see performIgniteRitual) has no reset timeout
     // to clean this up — without cancelling here, its rAF loop would
@@ -330,8 +365,17 @@ document.addEventListener('mousemove', (e) => {
 
   if (isDragging && currentItem?.type === 'ritual') {
     didDrag = true;
-    charm.style.left = `${e.clientX - ritualDragOffset.x}px`;
-    charm.style.top = `${e.clientY - ritualDragOffset.y}px`;
+    // Clamped so the whole item stays fully on screen — centering the
+    // art on the cursor means dragging near an edge would otherwise push
+    // part of it past the window's own boundary, where it simply isn't
+    // rendered at all (not a CSS clip, just off the edge of the window),
+    // looking like the art is being cut off by a mask.
+    const maxLeft = window.innerWidth - charm.offsetWidth;
+    const maxTop = window.innerHeight - charm.offsetHeight;
+    const newLeft = Math.min(Math.max(e.clientX - ritualDragOffset.x, 0), maxLeft);
+    const newTop = Math.min(Math.max(e.clientY - ritualDragOffset.y, 0), maxTop);
+    charm.style.left = `${newLeft}px`;
+    charm.style.top = `${newTop}px`;
     return;
   }
 
@@ -350,9 +394,23 @@ document.addEventListener('mousedown', (e) => {
   if (currentItem?.type === 'ritual' && charm.contains(e.target)) {
     isDragging = true;
     didDrag = false;
-    const rect = charm.getBoundingClientRect();
-    ritualDragOffset.x = e.clientX - rect.left;
-    ritualDragOffset.y = e.clientY - rect.top;
+    // Grabbing the item mid-break (while the throw/fall transform is
+    // still active, or lingering before its own reset fires) would
+    // otherwise leave that transform's visual offset stacked on top of
+    // the new drag position — the art renders wherever (left/top + that
+    // leftover offset) land, not under the cursor. Snapping back to rest
+    // first keeps the drag anchor exactly where the cursor grabbed it.
+    cancelBreakSequence(currentItem.ritual);
+    // Anchor on the item's own center rather than wherever inside its
+    // (possibly padded) bounding box the click happened to land — the
+    // art's visible content isn't flush with the image's edges (real
+    // photo assets carry some transparent margin), so preserving the
+    // exact click point could anchor the drag to empty space near an
+    // edge, making the art appear to hang below/above/beside the cursor
+    // instead of on it. Centering is also what the break sequence already
+    // assumes when it computes the impact point from this same box.
+    ritualDragOffset.x = charm.offsetWidth / 2;
+    ritualDragOffset.y = charm.offsetHeight / 2;
     e.preventDefault();
   }
 });
@@ -478,32 +536,219 @@ function performIgniteRitual(ritual) {
   }, ritual.resetAfterMs || 3000);
 }
 
-function performBreakRitual(ritual) {
+const easeOutCubic = (x) => 1 - Math.pow(1 - x, 3);
+const easeInCubic = (x) => x * x * x;
+
+// Snaps a break-ritual item back to its resting state: stops the
+// throw/tumble animation loop, removes the shatter photo overlay,
+// restores the image's opacity/rotation, and clears the pending
+// impact/reset timers. Used both to defensively reset before a fresh
+// break (a rapid re-click) and to bail out of an in-flight break the
+// moment the item is grabbed to drag.
+function cancelBreakSequence(ritual) {
   const img = charm.querySelector('img.charm-image');
-  if (!img || !ritual.brokenImage) return;
+  if (!img) return null;
 
   clearTimeout(breakResetTimer);
+  if (breakThrowRAF) {
+    // Only restore the pre-throw position when actually interrupting an
+    // in-flight throw. Restoring it unconditionally (on every call,
+    // including the routine "clear any leftovers" at the start of a
+    // brand-new break) snapped the item back to wherever its *previous*
+    // break started from even after it had since been dragged somewhere
+    // else — making it look like breaking only ever worked from one fixed
+    // spot on screen.
+    cancelAnimationFrame(breakThrowRAF);
+    breakThrowRAF = null;
+    if (ritualRestPosition) {
+      charm.style.left = ritualRestPosition.left;
+      charm.style.top = ritualRestPosition.top;
+    }
+  }
+  img.style.transform = '';
+  const existingShatter = charm.querySelector('.ritual-shatter-overlay');
+  if (existingShatter) existingShatter.remove();
+  img.style.opacity = '1';
 
-  window.overlayAPI.resolveAssetPath(ritual.brokenImage).then((url) => {
-    img.src = url;
-  });
-
-  const rect = charm.getBoundingClientRect();
-  window.spawnBurst(canvas, {
-    x: rect.left + rect.width / 2,
-    y: rect.top + rect.height / 2,
-    colors: ritual.burstColors || ['#ffffff', '#f7f0e1'],
-    shape: ritual.burstShape,
-    count: ritual.burstCount,
-    sizeRange: ritual.burstSizeRange,
-    speedRange: ritual.burstSpeedRange,
-    lifespanMs: ritual.burstLifespanMs,
-  });
-
-  breakResetTimer = setTimeout(() => {
-    if (!currentItem?.image) return;
+  if (ritual?.brokenImage && currentItem?.image) {
     window.overlayAPI.resolveAssetPath(currentItem.image).then((url) => {
       img.src = url;
     });
+  }
+
+  return img;
+}
+
+function performBreakRitual(ritual) {
+  const img = cancelBreakSequence(ritual);
+  if (!img) return;
+
+  // Captured now (its resting spot, whether that's the default center or
+  // wherever it's been dragged to) and restored explicitly whenever the
+  // sequence ends, whether by finishing naturally or being interrupted.
+  ritualRestPosition = { left: charm.style.left, top: charm.style.top };
+  const startLeft = parseFloat(ritualRestPosition.left) || 0;
+  const startTop = parseFloat(ritualRestPosition.top) || 0;
+
+  // "Thrown forcefully on the floor" reads as a toss, not a shove — a
+  // quick decelerating rise (someone winding up and launching it) then a
+  // longer accelerating fall past the start point down to the impact
+  // (ease-in, gravity winning), landing exactly when the shatter/burst
+  // fire. This is driven by a plain requestAnimationFrame loop writing
+  // straight to `charm.style.left/top`, not the Web Animations API: a
+  // WAAPI `.animate()` with `fill: 'forwards'` proved unreliable to
+  // cancel cleanly here — Chromium can auto-replace a finished,
+  // fill-forwards animation with a newer one on the same property
+  // without necessarily flushing its held transform back to identity in
+  // the same tick, so `charm` could end up with a leftover visual offset
+  // that no `getAnimations()`-based cancel() or explicit style clear
+  // reliably removed. Plain `left`/`top` writes have none of that
+  // ambiguity — they're always exactly what was last assigned, which is
+  // also what `charm`'s own click-through hit-testing and the drag math
+  // both read. The tumbling rotation stays on the image alone (cosmetic,
+  // doesn't affect hit-testing), applied the same way.
+  const throwUpDistance = ritual.throwUpDistance ?? 55;
+  const throwUpDurationMs = ritual.throwUpDurationMs ?? 130;
+  const throwDownDistance = ritual.throwDownDistance ?? 170;
+  const throwDownDurationMs = ritual.throwDownDurationMs ?? 260;
+  const throwDrift = ritual.throwDrift ?? -22;
+  const throwRotation = ritual.throwRotation ?? 34;
+  const throwDurationMs = throwUpDurationMs + throwDownDurationMs;
+  const peakDrift = throwDrift * 0.3;
+
+  const throwStart = performance.now();
+
+  function stepThrow(now) {
+    const elapsed = now - throwStart;
+
+    let dx;
+    let dy;
+    let rot;
+    if (elapsed <= throwUpDurationMs) {
+      const u = easeOutCubic(Math.min(elapsed / throwUpDurationMs, 1));
+      dx = peakDrift * u;
+      dy = -throwUpDistance * u;
+      rot = -throwRotation * 0.25 * u;
+    } else {
+      const u = easeInCubic(Math.min((elapsed - throwUpDurationMs) / throwDownDurationMs, 1));
+      dx = peakDrift + (throwDrift - peakDrift) * u;
+      dy = -throwUpDistance + (throwDownDistance - -throwUpDistance) * u;
+      rot = -throwRotation * 0.25 + (throwRotation - -throwRotation * 0.25) * u;
+    }
+
+    charm.style.left = `${startLeft + dx}px`;
+    charm.style.top = `${startTop + dy}px`;
+    img.style.transform = `rotate(${rot}deg)`;
+
+    if (elapsed < throwDurationMs) {
+      breakThrowRAF = requestAnimationFrame(stepThrow);
+    } else {
+      breakThrowRAF = null;
+      triggerBreakImpact(ritual, img);
+    }
+  }
+
+  breakThrowRAF = requestAnimationFrame(stepThrow);
+}
+
+function triggerBreakImpact(ritual, img) {
+  // Some items have a real "after" state worth showing (two coconut
+  // halves sitting there) — swap to it. Others (a coconut mid-shatter)
+  // don't have a meaningful settled "broken" pose to show a static image
+  // of; the debris burst alone tells the story, so the whole image just
+  // hides for the duration instead of swapping to a second asset.
+  if (ritual.brokenImage) {
+    window.overlayAPI.resolveAssetPath(ritual.brokenImage).then((url) => {
+      img.src = url;
+    });
+  } else {
+    img.style.opacity = '0';
+  }
+
+  // A real photo of the actual shattering moment (debris mid-flight) reads
+  // far more convincingly than any procedural burst alone. It's popped in
+  // fast (like an impact flash) at the point of landing, held briefly,
+  // then faded — the procedural burst below continues the motion after
+  // it's gone so the debris doesn't just vanish when the photo does.
+  if (ritual.shatterImage) {
+    const shatterImg = document.createElement('img');
+    shatterImg.className = 'ritual-shatter-overlay';
+    shatterImg.draggable = false;
+    const scale = ritual.shatterScale || 2.2;
+    const shatterWidth = img.offsetWidth * scale;
+    shatterImg.style.width = `${shatterWidth}px`;
+    // Narrower than the source photo's own aspect ratio so object-fit's
+    // cover+left crop (see .ritual-shatter-overlay) trims the sliced-off
+    // edge instead of stretching/showing it.
+    shatterImg.style.height = `${shatterWidth / (ritual.shatterCropAspect || 1.3)}px`;
+    charm.appendChild(shatterImg);
+
+    window.overlayAPI.resolveAssetPath(ritual.shatterImage).then((url) => {
+      shatterImg.src = url;
+    });
+
+    requestAnimationFrame(() => shatterImg.classList.add('visible'));
+
+    const shatterHoldMs = ritual.shatterHoldMs ?? 700;
+    setTimeout(() => {
+      shatterImg.classList.add('fading');
+      setTimeout(() => shatterImg.remove(), 400);
+    }, shatterHoldMs);
+  }
+
+  const rect = charm.getBoundingClientRect();
+  const impactX = rect.left + rect.width / 2;
+  const impactY = rect.top + rect.height / 2;
+
+  window.spawnBurst(canvas, {
+    x: impactX,
+    y: impactY,
+    colors: ritual.burstColors || ['#ffffff', '#f7f0e1'],
+    shape: ritual.burstShape,
+    shapes: ritual.burstShapes,
+    count: ritual.burstCount,
+    sizeRange: ritual.burstSizeRange,
+    lengthRange: ritual.burstLengthRange,
+    speedRange: ritual.burstSpeedRange,
+    gravity: ritual.burstGravity,
+    drag: ritual.burstDrag,
+    lifespanMs: ritual.burstLifespanMs,
+  });
+
+  // A watery core (coconut water) splashing outward alongside the shell
+  // shards/fiber — small, fast, heavily gravity-pulled droplets that fall
+  // away quicker than the debris so it reads as liquid, not more shell.
+  if (ritual.splash) {
+    window.spawnBurst(canvas, {
+      x: impactX,
+      y: impactY,
+      colors: ritual.splashColors || ['#eaf7fb', '#ffffff', '#cdeaf3'],
+      shape: 'circle',
+      count: ritual.splashCount ?? 36,
+      sizeRange: ritual.splashSizeRange || [2.5, 6],
+      speedRange: ritual.splashSpeedRange || [160, 400],
+      gravity: ritual.splashGravity ?? 750,
+      drag: ritual.splashDrag ?? 0.3,
+      lifespanMs: ritual.splashLifespanMs ?? 600,
+    });
+  }
+
+  breakResetTimer = setTimeout(() => {
+    img.style.transform = '';
+    if (ritualRestPosition) {
+      charm.style.left = ritualRestPosition.left;
+      charm.style.top = ritualRestPosition.top;
+    }
+    img.style.opacity = '1';
+    // Coconut-style breaks never touch `src` (they just hide/show the
+    // same image via opacity) — only re-resolve and reassign it here if
+    // this ritual actually swapped it away (a `brokenImage` ritual like
+    // the ash gourd), so a plain break never forces an unnecessary
+    // image reload/redecode at reset time.
+    if (ritual.brokenImage && currentItem?.image) {
+      window.overlayAPI.resolveAssetPath(currentItem.image).then((url) => {
+        img.src = url;
+      });
+    }
   }, ritual.resetAfterMs || 1800);
 }
