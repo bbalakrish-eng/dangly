@@ -1,4 +1,6 @@
 const { app, ipcMain, BrowserWindow, screen, globalShortcut } = require('electron');
+const path = require('path');
+const { pathToFileURL } = require('url');
 const { createOverlayWindow, sendActiveItem } = require('./overlay-window');
 const { createTray } = require('./tray');
 const { createGalleryWindow } = require('./gallery-window');
@@ -84,4 +86,8 @@ ipcMain.on('item:select', (_event, item) => setActiveItem(item));
 ipcMain.handle('display:get-info', () => {
   const display = screen.getPrimaryDisplay();
   return { bounds: display.bounds, workArea: display.workArea };
+});
+
+ipcMain.handle('assets:resolve', (_event, relativePath) => {
+  return pathToFileURL(path.join(app.getAppPath(), relativePath)).href;
 });

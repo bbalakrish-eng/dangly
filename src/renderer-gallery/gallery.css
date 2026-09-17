@@ -29,11 +29,21 @@ header p {
   font-size: 13px;
 }
 
+.category-heading {
+  margin: 0;
+  padding: 16px 28px 0;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8b83a3;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 14px;
-  padding: 16px 28px;
+  padding: 10px 28px 16px;
 }
 
 .card {
@@ -56,6 +66,11 @@ header p {
 .card .glyph {
   font-size: 40px;
   line-height: 1;
+}
+
+.card .glyph-image {
+  width: 44px;
+  height: 44px;
 }
 
 .card .name {

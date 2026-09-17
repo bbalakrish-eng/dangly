@@ -1,0 +1,19 @@
+<svg id="catRig" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 80" width="120" height="80">
+  <g id="tail" style="transform-origin: 20px 40px;">
+    <path d="M20,40 Q2,20 8,5" stroke="#d98a3d" stroke-width="7" fill="none" stroke-linecap="round"/>
+  </g>
+  <g id="backLeg" style="transform-origin: 30px 55px;">
+    <rect x="26" y="55" width="9" height="22" rx="4" fill="#d98a3d"/>
+  </g>
+  <g id="frontLeg" style="transform-origin: 85px 55px;">
+    <rect x="81" y="55" width="9" height="22" rx="4" fill="#d98a3d"/>
+  </g>
+  <ellipse cx="60" cy="45" rx="42" ry="22" fill="#e8a35c"/>
+  <ellipse cx="55" cy="52" rx="26" ry="12" fill="#f6d9ae"/>
+  <circle cx="95" cy="30" r="16" fill="#e8a35c"/>
+  <path d="M84,18 L88,4 L94,16 Z" fill="#e8a35c"/>
+  <path d="M100,16 L108,4 L108,18 Z" fill="#e8a35c"/>
+  <circle cx="100" cy="28" r="2.2" fill="#2b2b2b"/>
+  <circle cx="108" cy="27" r="2.2" fill="#2b2b2b"/>
+  <path d="M103,34 L106,34 L104.5,36 Z" fill="#b5652a"/>
+</svg>

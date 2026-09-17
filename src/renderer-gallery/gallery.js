@@ -1,45 +1,82 @@
-const grid = document.getElementById('grid');
+const categoriesEl = document.getElementById('categories');
 const customInput = document.getElementById('customEmoji');
 const useCustomBtn = document.getElementById('useCustom');
 
 let catalog = [];
 let activeItem = null;
 
-function renderCatalog() {
-  grid.innerHTML = '';
-  catalog.forEach((item) => {
-    const isActive = activeItem && activeItem.id === item.id;
+function groupByCategory(items) {
+  const groups = new Map();
+  items.forEach((item) => {
+    const category = item.category || 'More';
+    if (!groups.has(category)) groups.set(category, []);
+    groups.get(category).push(item);
+  });
+  return groups;
+}
 
-    const card = document.createElement('div');
-    card.className = `card${isActive ? ' active' : ''}`;
+function renderCard(item) {
+  const isActive = activeItem && activeItem.id === item.id;
 
-    const glyph = document.createElement('div');
-    glyph.className = 'glyph';
-    glyph.textContent = item.glyph;
+  const card = document.createElement('div');
+  card.className = `card${isActive ? ' active' : ''}`;
 
-    const name = document.createElement('div');
-    name.className = 'name';
-    name.textContent = item.name;
-
-    const origin = document.createElement('div');
-    origin.className = 'origin';
-    origin.textContent = item.origin;
-
-    const description = document.createElement('div');
-    description.className = 'description';
-    description.textContent = item.description;
-
-    const button = document.createElement('button');
-    button.textContent = isActive ? 'Selected' : 'Choose';
-    button.disabled = isActive;
-    button.addEventListener('click', () => {
-      window.galleryAPI.selectItem(item);
-      activeItem = item;
-      renderCatalog();
+  const glyph = document.createElement('div');
+  glyph.className = 'glyph';
+  if (item.image) {
+    const img = document.createElement('img');
+    img.className = 'glyph-image';
+    window.galleryAPI.resolveAssetPath(item.image).then((url) => {
+      img.src = url;
     });
+    glyph.appendChild(img);
+  } else {
+    glyph.textContent = item.glyph;
+  }
 
-    card.append(glyph, name, origin, description, button);
-    grid.appendChild(card);
+  const name = document.createElement('div');
+  name.className = 'name';
+  name.textContent = item.name;
+
+  const origin = document.createElement('div');
+  origin.className = 'origin';
+  origin.textContent = item.origin;
+
+  const description = document.createElement('div');
+  description.className = 'description';
+  description.textContent = item.description;
+
+  const button = document.createElement('button');
+  button.textContent = isActive ? 'Selected' : 'Choose';
+  button.disabled = isActive;
+  button.addEventListener('click', () => {
+    window.galleryAPI.selectItem(item);
+    activeItem = item;
+    renderCatalog();
+  });
+
+  card.append(glyph, name, origin, description, button);
+  return card;
+}
+
+function renderCatalog() {
+  categoriesEl.innerHTML = '';
+  const groups = groupByCategory(catalog);
+
+  groups.forEach((items, category) => {
+    const section = document.createElement('section');
+    section.className = 'category';
+
+    const heading = document.createElement('h2');
+    heading.className = 'category-heading';
+    heading.textContent = category;
+
+    const grid = document.createElement('div');
+    grid.className = 'grid';
+    items.forEach((item) => grid.appendChild(renderCard(item)));
+
+    section.append(heading, grid);
+    categoriesEl.appendChild(section);
   });
 }
 
