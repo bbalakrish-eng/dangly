@@ -1,0 +1,16 @@
+{
+  "name": "desktop-charms",
+  "productName": "Desktop Charms",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A customizable desktop charm and screen-effects overlay for Mac and PC",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "generate-icons": "node scripts/generate-placeholder-icons.js"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  }
+}
