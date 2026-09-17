@@ -27,6 +27,11 @@ html, body {
   cursor: grab;
   pointer-events: auto;
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+  /* The wobble transform below must pivot around where the string
+     actually attaches (the top), not the element's center — otherwise
+     any tilt swings the visible top away from the fixed anchor point,
+     opening a gap between the string's end and the art. */
+  transform-origin: top center;
 }
 
 .charm.hidden {
@@ -35,7 +40,7 @@ html, body {
 
 .charm-image {
   display: block;
-  height: 96px;
+  height: 220px;
   width: auto;
   pointer-events: none;
 }

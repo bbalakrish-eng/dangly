@@ -59,6 +59,46 @@
       "ritual": { "label": "Give it a flick", "animation": "flick" }
     },
     {
+      "id": "koi-fish",
+      "name": "Koi Fish",
+      "origin": "Japan",
+      "category": "Charms",
+      "description": "A koi swimming against the current, kept for perseverance and good fortune.",
+      "type": "charm",
+      "image": "assets/items/koi-fish.svg",
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "dragon",
+      "name": "Dragon",
+      "origin": "East Asia",
+      "category": "Charms",
+      "description": "A coiled dragon medallion for strength and good luck.",
+      "type": "charm",
+      "image": "assets/items/dragon.svg",
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "trishul",
+      "name": "Trishul",
+      "origin": "Hindu tradition",
+      "category": "Charms",
+      "description": "Shiva's three-pronged trident, carried for protection.",
+      "type": "charm",
+      "image": "assets/items/trishul.png",
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "dream-catcher",
+      "name": "Dream Catcher",
+      "origin": "Native American tradition",
+      "category": "Charms",
+      "description": "A woven web that catches bad dreams and lets good ones through.",
+      "type": "charm",
+      "image": "assets/items/dream-catcher.svg",
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
       "id": "snowfall",
       "name": "Snowfall",
       "origin": "Sample item",

@@ -29,6 +29,12 @@ function createCharmPhysics({ segments = 12, segmentLength = 15.5, initialAnchor
   let dragging = false;
   let dragTarget = null;
   let cursor = null;
+  // The charm's own rendered size, so hover proximity is measured against
+  // its actual visible rectangle rather than just the single top-anchor
+  // point — a fixed small radius from that one point only covered a
+  // small emoji-sized charm; it barely reached the top of a 200px+ image.
+  let charmWidth = 40;
+  let charmHeight = 40;
 
   const points = Array.from({ length: segments }, (_, i) => ({
     x: anchorX,
@@ -67,6 +73,11 @@ function createCharmPhysics({ segments = 12, segmentLength = 15.5, initialAnchor
     cursor = { x, y };
   }
 
+  function setSize(width, height) {
+    charmWidth = width;
+    charmHeight = height;
+  }
+
   // A subtle "flinch" when the cursor passes near the charm without
   // dragging it — nudges the bob's current position without touching its
   // previous position, which Verlet integration reads as an implicit
@@ -76,12 +87,25 @@ function createCharmPhysics({ segments = 12, segmentLength = 15.5, initialAnchor
     if (dragging || !cursor) return;
 
     const b = bob();
+    // The charm's art hangs below-and-centered on the bob (its top
+    // attachment point) — measure distance to that rectangle's nearest
+    // edge, not just the single bob point, so hovering anywhere over a
+    // tall/wide image triggers the reaction, not only near its very top.
+    const rectX = b.x - charmWidth / 2;
+    const nearestX = Math.max(rectX, Math.min(cursor.x, rectX + charmWidth));
+    const nearestY = Math.max(b.y, Math.min(cursor.y, b.y + charmHeight));
+    const edgeDx = nearestX - cursor.x;
+    const edgeDy = nearestY - cursor.y;
+    const edgeDist = Math.hypot(edgeDx, edgeDy);
+    if (edgeDist >= HOVER_RADIUS) return;
+
+    // Direction of the push is away from the bob (the charm recoiling as
+    // a whole), even though the radius check used the nearest edge.
     const dx = b.x - cursor.x;
     const dy = b.y - cursor.y;
-    const dist = Math.hypot(dx, dy);
-    if (dist >= HOVER_RADIUS || dist < 0.5) return;
+    const dist = Math.max(Math.hypot(dx, dy), 0.5);
 
-    const falloff = (HOVER_RADIUS - dist) / HOVER_RADIUS;
+    const falloff = (HOVER_RADIUS - edgeDist) / HOVER_RADIUS;
     const push = falloff * falloff * HOVER_STRENGTH * dt * dt;
     b.x += (dx / dist) * push;
     b.y += (dy / dist) * push * 0.4;
@@ -176,6 +200,7 @@ function createCharmPhysics({ segments = 12, segmentLength = 15.5, initialAnchor
     endDrag,
     flick,
     updateCursor,
+    setSize,
     update,
     render,
     getPoints,

@@ -35,19 +35,41 @@ function startCharmLoop() {
   charmStringSvg.classList.remove('hidden');
 
   let lastTime = null;
+  let previousBobX = null;
   function frame(time) {
     if (lastTime === null) lastTime = time;
     const dt = Math.min((time - lastTime) / 1000, 0.05);
     lastTime = time;
 
+    charmPhysics.setSize(charm.offsetWidth, charm.offsetHeight);
     charmPhysics.update(dt);
     const bob = charmPhysics.render(charmStringLine);
     // The string should end at the charm's TOP (like a real pendant tied
     // through a loop near its top), not its center — otherwise the charm
     // straddles the string's endpoint and looks wrong while swinging/dragging.
     charm.style.left = `${bob.x - charm.offsetWidth / 2}px`;
-    charm.style.top = `${bob.y}px`;
+    // A small deliberate overlap (not bob.y exactly) — verified the string
+    // endpoint, the charm's own layout position, and the source image's
+    // pixel data all line up exactly with zero gap, but downscaling a
+    // ~2100px image to ~200px on screen can visually soften/fade its own
+    // edge a couple of pixels via the browser's image interpolation, which
+    // doesn't show up when inspecting the source pixels directly. A few
+    // pixels of overlap makes the connection visually solid regardless.
+    charm.style.top = `${bob.y - 4}px`;
     positionBeads();
+
+    // A cheap "3D" illusion — no real depth, just a horizontal squash +
+    // slight tilt scaled by how fast the charm is currently swinging
+    // sideways. Since this reads directly off the physics velocity, it
+    // naturally covers every cause of movement (a flick, a drag-release
+    // swing, or just the cursor hover-flinch) without separate handling.
+    if (previousBobX !== null && dt > 0) {
+      const velocityX = (bob.x - previousBobX) / dt;
+      const squash = Math.max(0.72, 1 - Math.min(Math.abs(velocityX) / 380, 0.28));
+      const tilt = Math.max(-14, Math.min(14, velocityX / 18));
+      charm.style.transform = `scaleX(${squash}) rotate(${tilt}deg)`;
+    }
+    previousBobX = bob.x;
 
     charmLoopHandle = requestAnimationFrame(frame);
   }
@@ -59,6 +81,7 @@ function stopCharmLoop() {
   charmLoopHandle = null;
   charmPhysics = null;
   charmStringSvg.classList.add('hidden');
+  charm.style.transform = '';
 }
 
 let beadGradientCounter = 0;
