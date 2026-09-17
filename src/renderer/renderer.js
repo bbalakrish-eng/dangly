@@ -36,6 +36,7 @@ function startCharmLoop() {
 
   let lastTime = null;
   let previousBobX = null;
+  let smoothedVelocityX = 0;
   function frame(time) {
     if (lastTime === null) lastTime = time;
     const dt = Math.min((time - lastTime) / 1000, 0.05);
@@ -63,10 +64,18 @@ function startCharmLoop() {
     // sideways. Since this reads directly off the physics velocity, it
     // naturally covers every cause of movement (a flick, a drag-release
     // swing, or just the cursor hover-flinch) without separate handling.
+    // The raw per-frame (bob.x - previousBobX) / dt estimate is noisy
+    // even when the underlying motion is smooth, since it's a finite
+    // difference sampled at slightly uneven real frame times — low-pass
+    // filtering it removes that high-frequency jitter without lagging
+    // behind the actual swinging motion noticeably.
     if (previousBobX !== null && dt > 0) {
-      const velocityX = (bob.x - previousBobX) / dt;
-      const squash = Math.max(0.72, 1 - Math.min(Math.abs(velocityX) / 380, 0.28));
-      const tilt = Math.max(-14, Math.min(14, velocityX / 18));
+      const rawVelocityX = (bob.x - previousBobX) / dt;
+      const smoothing = 1 - Math.exp(-dt * 18);
+      smoothedVelocityX += (rawVelocityX - smoothedVelocityX) * smoothing;
+
+      const squash = Math.max(0.72, 1 - Math.min(Math.abs(smoothedVelocityX) / 380, 0.28));
+      const tilt = Math.max(-14, Math.min(14, smoothedVelocityX / 18));
       charm.style.transform = `scaleX(${squash}) rotate(${tilt}deg)`;
     }
     previousBobX = bob.x;

@@ -82,7 +82,12 @@ function createCharmPhysics({ segments = 12, segmentLength = 15.5, initialAnchor
   // dragging it — nudges the bob's current position without touching its
   // previous position, which Verlet integration reads as an implicit
   // velocity kick next step, so it eases back naturally via the existing
-  // gravity/damping rather than needing a separate spring model.
+  // gravity/damping rather than needing a separate spring model. Called
+  // from stepOnce() with the fixed timestep, not from update() with the
+  // real (variable) frame time — the push scales with dt², which made it
+  // very sensitive to ordinary frame-timing jitter (16ms vs 18ms is a
+  // small dt difference but a much larger one once squared), reading as
+  // a flicker rather than smooth motion.
   function applyHoverReaction(dt) {
     if (dragging || !cursor) return;
 
@@ -113,6 +118,7 @@ function createCharmPhysics({ segments = 12, segmentLength = 15.5, initialAnchor
 
   function stepOnce() {
     elapsed += FIXED_STEP;
+    applyHoverReaction(FIXED_STEP);
     const n = points.length;
     const wind = 0.0035 * Math.sin(elapsed * 0.55) + 0.002 * Math.sin(elapsed * 1.3 + 0.8);
 
@@ -176,8 +182,6 @@ function createCharmPhysics({ segments = 12, segmentLength = 15.5, initialAnchor
   }
 
   function update(dtSeconds) {
-    applyHoverReaction(dtSeconds);
-
     accumulator = Math.min(accumulator + dtSeconds, FIXED_STEP * 5);
     while (accumulator >= FIXED_STEP) {
       stepOnce();
