@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "clover",
+      "name": "Clover",
+      "origin": "Sample item",
+      "description": "A four-leaf clover kept for good luck. Give it a flick.",
+      "type": "charm",
+      "glyph": "🍀",
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "star",
+      "name": "Star",
+      "origin": "Sample item",
+      "description": "A wishing star for your screen. Give it a flick.",
+      "type": "charm",
+      "glyph": "⭐",
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "heart",
+      "name": "Heart",
+      "origin": "Sample item",
+      "description": "A little bit of warmth on your desktop.",
+      "type": "charm",
+      "glyph": "💖",
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "bell",
+      "name": "Bell",
+      "origin": "Sample item",
+      "description": "Ring it when you make a wish, or before something that matters.",
+      "type": "charm",
+      "glyph": "🔔",
+      "ritual": { "label": "Ring the bell", "animation": "flick" }
+    }
+  ]
+}

@@ -1,17 +1,50 @@
 const { app, ipcMain, BrowserWindow } = require('electron');
-const { createOverlayWindow } = require('./overlay-window');
+const { createOverlayWindow, sendActiveItem } = require('./overlay-window');
 const { createTray } = require('./tray');
+const { createGalleryWindow } = require('./gallery-window');
+const { loadCatalog } = require('../shared/catalog');
+const { loadSettings, saveSettings } = require('./store');
 
 let overlayWindow = null;
-let tray = null;
+let galleryWindow = null;
+let catalog = [];
+let settings = null;
+
+function resolveActiveItem() {
+  return settings.activeItem || catalog[0] || null;
+}
+
+function setActiveItem(item) {
+  settings.activeItem = item;
+  saveSettings(settings);
+  sendActiveItem(overlayWindow, item);
+}
+
+function openGallery() {
+  if (galleryWindow && !galleryWindow.isDestroyed()) {
+    galleryWindow.focus();
+    return;
+  }
+  galleryWindow = createGalleryWindow();
+  galleryWindow.on('closed', () => {
+    galleryWindow = null;
+  });
+}
 
 app.whenReady().then(() => {
   if (process.platform === 'darwin' && app.dock) {
     app.dock.hide();
   }
 
+  catalog = loadCatalog();
+  settings = loadSettings();
+
   overlayWindow = createOverlayWindow();
-  tray = createTray(overlayWindow);
+  overlayWindow.webContents.once('did-finish-load', () => {
+    sendActiveItem(overlayWindow, resolveActiveItem());
+  });
+
+  createTray({ overlayWindow, onOpenGallery: openGallery });
 });
 
 app.on('window-all-closed', () => {
@@ -22,3 +55,7 @@ ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (win) win.setIgnoreMouseEvents(ignore, options);
 });
+
+ipcMain.handle('catalog:get', () => catalog);
+ipcMain.handle('catalog:get-active', () => resolveActiveItem());
+ipcMain.on('item:select', (_event, item) => setActiveItem(item));

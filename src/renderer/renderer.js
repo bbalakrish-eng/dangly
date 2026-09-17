@@ -1,11 +1,22 @@
 const charm = document.getElementById('charm');
 
-// Start centered near the top of the screen.
+let currentItem = null;
+
 function centerCharm() {
   const rect = charm.getBoundingClientRect();
   charm.style.left = `${window.innerWidth / 2 - rect.width / 2}px`;
 }
-centerCharm();
+
+function applyItem(item) {
+  currentItem = item;
+  charm.textContent = item ? item.glyph : '🍀';
+  if (!charm.style.left) {
+    centerCharm();
+  }
+}
+
+window.overlayAPI.getActiveItem().then(applyItem);
+window.overlayAPI.onItemChanged(applyItem);
 
 let isDragging = false;
 let didDrag = false;
@@ -44,7 +55,8 @@ window.addEventListener('mouseup', () => {
 });
 
 function performRitual() {
-  charm.classList.remove('flick');
+  const animationName = currentItem?.ritual?.animation || 'flick';
+  charm.classList.remove(animationName);
   void charm.offsetWidth; // restart the CSS animation
-  charm.classList.add('flick');
+  charm.classList.add(animationName);
 }

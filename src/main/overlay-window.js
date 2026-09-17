@@ -34,4 +34,10 @@ function createOverlayWindow() {
   return win;
 }
 
-module.exports = { createOverlayWindow };
+function sendActiveItem(win, item) {
+  if (win && !win.isDestroyed()) {
+    win.webContents.send('item:changed', item);
+  }
+}
+
+module.exports = { createOverlayWindow, sendActiveItem };
