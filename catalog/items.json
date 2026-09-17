@@ -36,6 +36,33 @@
       "type": "charm",
       "glyph": "🔔",
       "ritual": { "label": "Ring the bell", "animation": "flick" }
+    },
+    {
+      "id": "snowfall",
+      "name": "Snowfall",
+      "origin": "Sample item",
+      "description": "Gentle snow drifts down your screen and eases away from your cursor.",
+      "type": "effect",
+      "glyph": "❄️",
+      "effect": { "preset": "snow" }
+    },
+    {
+      "id": "rainfall",
+      "name": "Rainfall",
+      "origin": "Sample item",
+      "description": "A steady rain streaks down the screen.",
+      "type": "effect",
+      "glyph": "🌧️",
+      "effect": { "preset": "rain" }
+    },
+    {
+      "id": "autumn-leaves",
+      "name": "Autumn Leaves",
+      "origin": "Sample item",
+      "description": "Leaves tumble and sway on their way down, drifting around your cursor.",
+      "type": "effect",
+      "glyph": "🍂",
+      "effect": { "preset": "leaves" }
     }
   ]
 }

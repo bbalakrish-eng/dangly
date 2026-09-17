@@ -1,6 +1,8 @@
 const charm = document.getElementById('charm');
+const canvas = document.getElementById('effects');
 
 let currentItem = null;
+let particleSystem = null;
 
 function centerCharm() {
   const rect = charm.getBoundingClientRect();
@@ -9,6 +11,20 @@ function centerCharm() {
 
 function applyItem(item) {
   currentItem = item;
+
+  if (particleSystem) {
+    particleSystem.stop();
+    particleSystem = null;
+  }
+
+  if (item && item.type === 'effect') {
+    charm.classList.add('hidden');
+    particleSystem = window.createParticleSystem(canvas, item.effect || {});
+    particleSystem.start();
+    return;
+  }
+
+  charm.classList.remove('hidden');
   charm.textContent = item ? item.glyph : '🍀';
   if (!charm.style.left) {
     centerCharm();
@@ -29,6 +45,10 @@ function updateClickThrough(x, y) {
 }
 
 document.addEventListener('mousemove', (e) => {
+  if (particleSystem) {
+    particleSystem.updateCursor(e.clientX, e.clientY);
+  }
+
   if (isDragging) {
     didDrag = true;
     charm.style.left = `${e.clientX - dragOffset.x}px`;
