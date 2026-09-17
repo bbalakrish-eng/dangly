@@ -5,12 +5,37 @@
   "private": true,
   "description": "A customizable desktop charm and screen-effects overlay for Mac and PC",
   "main": "src/main/main.js",
+  "author": "Desktop Charms",
   "scripts": {
     "start": "electron .",
-    "generate-icons": "node scripts/generate-placeholder-icons.js"
+    "generate-icons": "node scripts/generate-placeholder-icons.js",
+    "package:mac": "electron-builder --mac --dir",
+    "package:win": "electron-builder --win --dir"
   },
   "devDependencies": {
     "electron": "^33.0.0",
     "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.desktopcharms.app",
+    "productName": "Desktop Charms",
+    "files": [
+      "src/**/*",
+      "catalog/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "mac": {
+      "icon": "assets/icon.png",
+      "category": "public.app-category.utilities",
+      "target": ["dir"]
+    },
+    "win": {
+      "icon": "assets/icon.png",
+      "target": ["dir"]
+    }
   }
 }
