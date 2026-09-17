@@ -215,6 +215,9 @@ function applyItem(item) {
   }
 
   if (item.type === 'effect') {
+    // Unlike pets, effects default to the literal bottom of the screen
+    // (not the Dock-aware work area) — accumulating snow is meant to
+    // reach the real bottom edge and build up from there.
     particleSystem = window.createParticleSystem(canvas, item.effect || {});
     particleSystem.start();
     return;

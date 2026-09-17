@@ -4,25 +4,40 @@
 
 window.EFFECT_PRESETS = {
   snow: {
-    density: 80,
-    glyphs: ['❄'],
-    color: '#ffffff',
-    sizeRange: [10, 22],
-    fallSpeedRange: [20, 50],
+    density: 160,
+    shape: 'dot',
+    irregular: true,
+    color: '#fdfaf5',
+    opacity: 0.85,
+    sizeRange: [0.8, 5],
+    sizeBias: 2.2,
+    glowAmount: 0.8,
+    fallSpeedRange: [20, 60],
     swayAmplitude: 20,
     swayFrequency: 0.5,
-    rotate: false,
+    rotate: true,
     cursorAvoidRadius: 60,
+    accumulate: true,
+    maxPileHeight: 140,
+    depositAmount: 3,
   },
   rain: {
-    density: 150,
+    density: 180,
     shape: 'line',
-    color: 'rgba(180, 200, 255, 0.6)',
-    lengthRange: [10, 20],
-    fallSpeedRange: [400, 700],
+    color: 'rgba(190, 210, 255, 0.8)',
+    depthCorrelated: true,
+    lengthRange: [8, 26],
+    fallSpeedRange: [350, 850],
+    lineWidthRange: [0.7, 2],
+    opacityRange: [0.25, 0.9],
     swayAmplitude: 2,
     angleDegrees: 8,
     cursorAvoidRadius: 0,
+    // glassSplash tried and rejected (looked bad through several
+    // iterations — see catalog/README.md) — left disabled rather than
+    // removed from the engine, in case a different approach is worth
+    // trying later.
+    glassSplash: false,
   },
   leaves: {
     density: 30,
