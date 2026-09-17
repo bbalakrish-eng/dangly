@@ -156,18 +156,14 @@
       "category": "Rituals",
       "description": "Light the lamp to mark a beginning, or clear the air before something that matters.",
       "type": "ritual",
-      "image": "assets/items/lamp-unlit.svg",
+      "image": "assets/items/lamp.png",
       "ritual": {
         "label": "Light the lamp",
-        "animation": "break",
-        "brokenImage": "assets/items/lamp-lit.svg",
-        "resetAfterMs": 3000,
-        "burstColors": ["#ffdb8a", "#ff9d3d", "#fff6c8"],
-        "burstShape": "circle",
-        "burstCount": 20,
-        "burstSizeRange": [2, 5],
-        "burstSpeedRange": [40, 100],
-        "burstLifespanMs": 700
+        "animation": "ignite",
+        "flameAnchor": { "xPct": 50, "yPct": 23 },
+        "flameWidth": 34,
+        "flameHeight": 55,
+        "resetAfterMs": 3500
       }
     },
     {

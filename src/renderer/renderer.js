@@ -14,6 +14,7 @@ let charmLoopHandle = null;
 let interactiveEl = null; // element eligible for click-through + click reactions
 let displayInfo = null;
 let breakResetTimer = null;
+let flameAnimationHandle = null;
 
 function computeGroundY() {
   if (!displayInfo) return window.innerHeight - 60;
@@ -29,14 +30,40 @@ function resizeEffectsCanvas() {
 resizeEffectsCanvas();
 window.addEventListener('resize', resizeEffectsCanvas);
 
+// A "coin flip" settle animation played ONCE per disturbance (a flick or
+// a drag release), not continuously tied to raw velocity every frame —
+// reverse-engineered from luckydangle.app's actual shipped JS. Squash
+// alone (no lighting cue) reads as a flat cutout folding, not an object
+// turning in 3D, so a brightness dip is synced to the same envelope: the
+// charm reads as dimmer right when it's most "edge-on" (catching the
+// least light), which is what actually sells the 3D illusion.
+const FLIP_DURATION = 5.8; // matches the reference's own tuning
+function computeFlip(elapsed) {
+  const t = Math.min(Math.max(elapsed / FLIP_DURATION, 0), 1);
+  if (t <= 0 || t >= 1) return { scaleX: 1, rotation: 0, brightness: 1 };
+  const envelope = t * t * (3 - 2 * t); // smoothstep
+  const wave = Math.sin(2 * Math.PI * envelope);
+  const depth = Math.abs(wave);
+  return {
+    scaleX: 1 - 0.18 * depth,
+    rotation: 1.8 * wave * Math.sin(Math.PI * t),
+    brightness: 1 - 0.03 * depth,
+  };
+}
+
+let triggerCharmFlip = () => {};
+
 function startCharmLoop() {
   stopCharmLoop();
   charmPhysics = window.createCharmPhysics({ initialAnchorX: window.innerWidth - 200, anchorY: 6 });
   charmStringSvg.classList.remove('hidden');
 
+  let flipElapsed = FLIP_DURATION; // start at rest (no flip in progress)
+  triggerCharmFlip = () => {
+    flipElapsed = 0;
+  };
+
   let lastTime = null;
-  let previousBobX = null;
-  let smoothedVelocityX = 0;
   function frame(time) {
     if (lastTime === null) lastTime = time;
     const dt = Math.min((time - lastTime) / 1000, 0.05);
@@ -59,26 +86,15 @@ function startCharmLoop() {
     charm.style.top = `${bob.y - 4}px`;
     positionBeads();
 
-    // A cheap "3D" illusion — no real depth, just a horizontal squash +
-    // slight tilt scaled by how fast the charm is currently swinging
-    // sideways. Since this reads directly off the physics velocity, it
-    // naturally covers every cause of movement (a flick, a drag-release
-    // swing, or just the cursor hover-flinch) without separate handling.
-    // The raw per-frame (bob.x - previousBobX) / dt estimate is noisy
-    // even when the underlying motion is smooth, since it's a finite
-    // difference sampled at slightly uneven real frame times — low-pass
-    // filtering it removes that high-frequency jitter without lagging
-    // behind the actual swinging motion noticeably.
-    if (previousBobX !== null && dt > 0) {
-      const rawVelocityX = (bob.x - previousBobX) / dt;
-      const smoothing = 1 - Math.exp(-dt * 18);
-      smoothedVelocityX += (rawVelocityX - smoothedVelocityX) * smoothing;
-
-      const squash = Math.max(0.72, 1 - Math.min(Math.abs(smoothedVelocityX) / 380, 0.28));
-      const tilt = Math.max(-14, Math.min(14, smoothedVelocityX / 18));
-      charm.style.transform = `scaleX(${squash}) rotate(${tilt}deg)`;
-    }
-    previousBobX = bob.x;
+    flipElapsed = Math.min(flipElapsed + dt, FLIP_DURATION);
+    const flip = computeFlip(flipElapsed);
+    // Continuous tilt matching the string's actual current angle — a
+    // real hanging object rotates to align with what it's hanging from
+    // as it swings, not just translate while staying upright. Separate
+    // from (and added to) the brief coin-flip rotation above.
+    const swingTilt = Math.max(-35, Math.min(35, charmPhysics.getSwingAngleDegrees()));
+    charm.style.transform = `scaleX(${flip.scaleX}) rotate(${flip.rotation + swingTilt}deg)`;
+    charm.style.filter = `drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4)) brightness(${flip.brightness})`;
 
     charmLoopHandle = requestAnimationFrame(frame);
   }
@@ -91,6 +107,8 @@ function stopCharmLoop() {
   charmPhysics = null;
   charmStringSvg.classList.add('hidden');
   charm.style.transform = '';
+  charm.style.filter = '';
+  triggerCharmFlip = () => {};
 }
 
 let beadGradientCounter = 0;
@@ -192,7 +210,7 @@ function renderCharmVisual(item) {
 
   if (item && item.image) {
     const img = document.createElement('img');
-    img.className = 'charm-image';
+    img.className = item.type === 'ritual' ? 'charm-image ritual-image' : 'charm-image';
     img.draggable = false;
     charm.appendChild(img);
     window.overlayAPI.resolveAssetPath(item.image).then((url) => {
@@ -334,6 +352,7 @@ window.addEventListener('mouseup', (e) => {
     }
     if (isDragging && charmPhysics) {
       charmPhysics.endDrag();
+      if (didDrag) triggerCharmFlip(); // releasing a drag is a disturbance too
     }
     isDragging = false;
     return;
@@ -341,7 +360,7 @@ window.addEventListener('mouseup', (e) => {
 
   if (currentItem?.type === 'ritual') {
     if (isDragging && !didDrag && charm.contains(e.target)) {
-      performBreakRitual(currentItem.ritual);
+      performRitualAction(currentItem.ritual);
     }
     isDragging = false;
     return;
@@ -355,6 +374,7 @@ window.addEventListener('mouseup', (e) => {
 function performRitual() {
   if (currentItem?.type === 'charm' && charmPhysics) {
     charmPhysics.flick();
+    triggerCharmFlip();
     return;
   }
 
@@ -364,6 +384,75 @@ function performRitual() {
     void petGlyph.offsetWidth; // restart the CSS animation
     petGlyph.classList.add(animationName);
   }
+}
+
+function performRitualAction(ritual) {
+  if (ritual.animation === 'ignite') {
+    performIgniteRitual(ritual);
+  } else {
+    performBreakRitual(ritual);
+  }
+}
+
+let flameGradientCounter = 0;
+
+// A real animated flame + glow layered on top of a single static "unlit"
+// image, rather than swapping to a separate hand-drawn "lit" image. The
+// flicker is driven per-frame in JS as a sum of several non-harmonic sine
+// waves (different, unrelated frequencies) rather than a short CSS
+// @keyframes loop — a short loop visibly repeats itself; summing waves
+// that never share a common period reads as genuinely organic motion
+// that doesn't obviously cycle.
+function performIgniteRitual(ritual) {
+  const existing = charm.querySelector('.ritual-flame-wrap');
+  if (existing) existing.remove();
+  if (flameAnimationHandle) cancelAnimationFrame(flameAnimationHandle);
+  clearTimeout(breakResetTimer);
+
+  const anchor = ritual.flameAnchor || { xPct: 50, yPct: 25 };
+  const gradId = `flameGrad-${flameGradientCounter++}`;
+  const wrap = document.createElement('div');
+  wrap.className = 'ritual-flame-wrap';
+  wrap.style.left = `${anchor.xPct}%`;
+  wrap.style.top = `${anchor.yPct}%`;
+  wrap.innerHTML = `
+    <div class="ritual-flame-glow"></div>
+    <svg class="ritual-flame-svg" viewBox="0 0 40 65" width="${ritual.flameWidth || 34}" height="${ritual.flameHeight || 55}">
+      <defs>
+        <linearGradient id="${gradId}" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stop-color="#ff7a1a"/>
+          <stop offset="55%" stop-color="#ffb23d"/>
+          <stop offset="100%" stop-color="#fff6c8"/>
+        </linearGradient>
+      </defs>
+      <path d="M20,63 C12,54 9,44 12,33 C14,23 17,15 18,8 A3.5,3.5 0 0 0 22,8 C23,15 26,23 28,33 C31,44 28,54 20,63 Z" fill="url(#${gradId})"/>
+    </svg>
+  `;
+  charm.appendChild(wrap);
+  requestAnimationFrame(() => wrap.classList.add('visible'));
+
+  const flameSvg = wrap.querySelector('.ritual-flame-svg');
+  let flameStart = null;
+  function animateFlame(time) {
+    if (flameStart === null) flameStart = time;
+    const t = (time - flameStart) / 1000;
+    const scaleY = 1 + 0.07 * Math.sin(t * 7.3) + 0.04 * Math.sin(t * 13.1 + 1.7) + 0.03 * Math.sin(t * 4.7 + 0.6);
+    const scaleX = 1 - 0.05 * Math.sin(t * 6.1 + 0.9) - 0.03 * Math.sin(t * 11.3 + 2.2);
+    const skew = 3 * Math.sin(t * 3.3 + 0.3) + 2 * Math.sin(t * 8.9 + 1.1);
+    const shiftX = 1.5 * Math.sin(t * 2.6 + 0.4);
+    flameSvg.style.transform = `translateX(${shiftX}px) scaleX(${scaleX}) scaleY(${scaleY}) skewX(${skew}deg)`;
+    flameAnimationHandle = requestAnimationFrame(animateFlame);
+  }
+  flameAnimationHandle = requestAnimationFrame(animateFlame);
+
+  breakResetTimer = setTimeout(() => {
+    wrap.classList.remove('visible');
+    if (flameAnimationHandle) {
+      cancelAnimationFrame(flameAnimationHandle);
+      flameAnimationHandle = null;
+    }
+    setTimeout(() => wrap.remove(), 350);
+  }, ritual.resetAfterMs || 3000);
 }
 
 function performBreakRitual(ritual) {

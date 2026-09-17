@@ -45,6 +45,52 @@ html, body {
   pointer-events: none;
 }
 
+/* Ritual items are free-standing (not hanging from the tall string), and
+   the art tends to be wide/short (a lamp, a gourd) rather than the tall
+   pendant shapes charms use — sharing the 220px charm height would make
+   a wide image comically huge. */
+.charm-image.ritual-image {
+  height: 120px;
+}
+
+.ritual-flame-wrap {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.ritual-flame-wrap.visible {
+  opacity: 1;
+}
+
+.ritual-flame-glow {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 70px;
+  height: 70px;
+  transform: translate(-50%, 30%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 246, 200, 0.85) 0%, rgba(255, 246, 200, 0) 70%);
+  animation: ritual-glow-pulse 0.7s ease-in-out infinite alternate;
+}
+
+.ritual-flame-svg {
+  position: relative;
+  display: block;
+  transform-origin: bottom center;
+  /* Motion is driven per-frame in JS (a sum of non-harmonic sine waves —
+     see performIgniteRitual) rather than a CSS @keyframes loop, since a
+     short deterministic loop visibly repeats itself; no `animation` here. */
+}
+
+@keyframes ritual-glow-pulse {
+  0% { opacity: 0.7; transform: translate(-50%, 30%) scale(0.92); }
+  100% { opacity: 1; transform: translate(-50%, 30%) scale(1.08); }
+}
+
 .charm-string {
   position: absolute;
   top: 0;

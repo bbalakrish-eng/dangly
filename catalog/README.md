@@ -46,9 +46,13 @@ Add an entry to `items.json` — no code changes needed. Restart the app (or reo
   - Positioning is **exact geometry**, not guesswork: `beadClearance` is the edge-to-edge gap (px) from the charm's top to the nearest bead's edge. `beadGap` is the edge-to-edge gap (px) between each pair of beads further up the rope — one number for every gap, or an array read outward from the charm, e.g. `[-2, 0]`. **`0` means the two circles are exactly tangent (touching, no overlap); negative overlaps them** (like real threaded beads resting against each other); positive leaves visible space. Since it's radius-sum math, there's no need to iteratively guess a pixel value the way the old glyph-based version required.
   - Beads ride along the rope's own physics points (`getPoints()`/`getSegmentLength()` in `charm-physics.js`) — purely visual, not separately simulated.
 
-## Ritual items (coconut-breaking, lamp lighting, …) — fixed spot, multi-stage click action
+## Ritual items (coconut-breaking, lamp lighting, ash-gourd breaking, …) — fixed spot, multi-stage click action
 
-`type: "ritual"` items do **not** hang or swing — they sit at a fixed position and respond to a click with a multi-stage sequence: swap to a "broken"/"finished" image, play a particle burst, then revert. This is the right type for actions like coconut-breaking, camphor/lamp lighting, or ash-gourd breaking — anything that's "perform this action" rather than "hang this ornament."
+`type: "ritual"` items do **not** hang or swing — they sit at a fixed position (freely draggable) and respond to a click with a multi-stage sequence. Two `ritual.animation` patterns exist, dispatched from `performRitualAction()` in `src/renderer/renderer.js`:
+
+### `"break"` — swap to a second image + particle burst
+
+For actions with a genuinely different "after" state (a split coconut, a broken gourd) where a second hand-drawn/real image exists for that state:
 
 ```json
 {
@@ -66,7 +70,36 @@ Add an entry to `items.json` — no code changes needed. Restart the app (or reo
 }
 ```
 
-On click: the image swaps to `brokenImage`, a one-shot particle burst plays (`spawnBurst` in `particle-engine.js`), then after `resetAfterMs` it reverts to the item's original `image`. Reuse this same pattern for other ritual actions — same mechanic, different art/burst tuning. Burst options: `burstColors`, `burstShape` (`"circle"` default, or `"shard"` for small rotating rectangular chips — debris rather than confetti), `burstCount`, `burstSizeRange`, `burstSpeedRange`, `burstLifespanMs`. A genuinely different *kind* of multi-stage action (not just different art/burst tuning) means extending `performBreakRitual()` in `src/renderer/renderer.js`.
+On click: the image swaps to `brokenImage`, a one-shot particle burst plays (`spawnBurst` in `particle-engine.js`), then after `resetAfterMs` it reverts to the item's original `image`. Burst options: `burstColors`, `burstShape` (`"circle"` default, or `"shard"` for small rotating rectangular chips — debris rather than confetti), `burstCount`, `burstSizeRange`, `burstSpeedRange`, `burstLifespanMs`.
+
+### `"ignite"` — animated flame/glow layered on ONE static image
+
+For lighting actions (a lamp, a candle, incense) where you have a single real "unlit" image and want a genuinely animated flame on top, rather than commissioning a second static "lit" image:
+
+```json
+{
+  "id": "unique-id",
+  "category": "Rituals",
+  "type": "ritual",
+  "image": "assets/items/lamp.png",
+  "ritual": {
+    "label": "Light the lamp",
+    "animation": "ignite",
+    "flameAnchor": { "xPct": 50, "yPct": 23 },
+    "flameWidth": 22,
+    "flameHeight": 36,
+    "resetAfterMs": 3500
+  }
+}
+```
+
+On click: a small SVG flame + radial-gradient glow fades in at `flameAnchor` (a percentage of the image's own rendered width/height — find the wick's position visually or via pixel inspection, since it needs to line up with that specific piece of art), flickers via a looping CSS animation (genuinely alive, not a fixed frame), then fades out and is removed after `resetAfterMs`. `flameWidth`/`flameHeight` size the flame SVG in px. A different *kind* of ignite look (not just position/size/timing) means editing the flame SVG markup and `@keyframes ritual-flame-flicker`/`ritual-glow-pulse` in `styles.css`.
+
+### Sizing note
+
+Ritual art gets the `.ritual-image` CSS class (150px height) instead of the charm string's 220px — ritual art tends to be wide/short (a lamp, a gourd) rather than the tall pendant shapes charms use, so sharing the charm height would make wide art comically huge.
+
+A genuinely different *kind* of multi-stage action (not covered by either pattern above) means adding a new `ritual.animation` case to `performRitualAction()`.
 
 ## Effect items (snow, rain, leaves, …) — ambient, click-through, full-screen
 

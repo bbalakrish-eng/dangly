@@ -198,6 +198,18 @@ function createCharmPhysics({ segments = 12, segmentLength = 15.5, initialAnchor
     return points;
   }
 
+  // The angle of the last segment (second-to-last point to the bob),
+  // in degrees, 0 = hanging straight down. A hanging object naturally
+  // tilts to align with the string as it swings — without this, the
+  // charm only ever translates and always renders upright, which looks
+  // stiff regardless of how hard it's actually swinging.
+  function getSwingAngleDegrees() {
+    const n = points.length;
+    const a = points[n - 2];
+    const b = points[n - 1];
+    return (Math.atan2(b.x - a.x, b.y - a.y) * 180) / Math.PI;
+  }
+
   return {
     startDrag,
     dragTo,
@@ -208,6 +220,7 @@ function createCharmPhysics({ segments = 12, segmentLength = 15.5, initialAnchor
     update,
     render,
     getPoints,
+    getSwingAngleDegrees,
     getSegmentLength: () => segmentLength,
     isDragging: () => dragging,
   };
