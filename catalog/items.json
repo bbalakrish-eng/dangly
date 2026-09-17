@@ -154,16 +154,15 @@
       "name": "Lamp Lighting",
       "origin": "Hindu ritual",
       "category": "Rituals",
-      "description": "Light the lamp to mark a beginning, or clear the air before something that matters.",
+      "description": "A lamp kept lit to mark a beginning, or to clear the air before something that matters.",
       "type": "ritual",
       "image": "assets/items/lamp.png",
       "ritual": {
-        "label": "Light the lamp",
         "animation": "ignite",
+        "persistent": true,
         "flameAnchor": { "xPct": 50, "yPct": 23 },
-        "flameWidth": 34,
-        "flameHeight": 55,
-        "resetAfterMs": 3500
+        "flameWidth": 42,
+        "flameHeight": 95
       }
     },
     {

@@ -55,7 +55,12 @@ html, body {
 
 .ritual-flame-wrap {
   position: absolute;
-  transform: translate(-50%, -100%);
+  /* -88% (not -100%) deliberately lets the bottom ~12% of the flame
+     graphic extend below the anchor point, overlapping the wick instead
+     of sitting flush above it — matching the reference, where the flame
+     base covers the wick's tip with it faintly visible through the
+     mask-faded transparency there (see the SVG mask on the flame path). */
+  transform: translate(-50%, -88%);
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.3s ease;
@@ -68,13 +73,18 @@ html, body {
 .ritual-flame-glow {
   position: absolute;
   left: 50%;
-  bottom: 0;
-  width: 70px;
-  height: 70px;
-  transform: translate(-50%, 30%);
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 246, 200, 0.85) 0%, rgba(255, 246, 200, 0) 70%);
-  animation: ritual-glow-pulse 0.7s ease-in-out infinite alternate;
+  bottom: 15%;
+  width: 130px;
+  height: 190px;
+  transform: translate(-50%, 0);
+  background: radial-gradient(
+    ellipse 50% 50% at 50% 65%,
+    rgba(255, 248, 214, 0.55) 0%,
+    rgba(255, 240, 190, 0.28) 35%,
+    rgba(255, 235, 180, 0.1) 60%,
+    rgba(255, 235, 180, 0) 80%
+  );
+  animation: ritual-glow-pulse 0.9s ease-in-out infinite alternate;
 }
 
 .ritual-flame-svg {
@@ -87,8 +97,8 @@ html, body {
 }
 
 @keyframes ritual-glow-pulse {
-  0% { opacity: 0.7; transform: translate(-50%, 30%) scale(0.92); }
-  100% { opacity: 1; transform: translate(-50%, 30%) scale(1.08); }
+  0% { opacity: 0.75; transform: translate(-50%, 0) scale(0.94); }
+  100% { opacity: 1; transform: translate(-50%, 0) scale(1.06); }
 }
 
 .charm-string {

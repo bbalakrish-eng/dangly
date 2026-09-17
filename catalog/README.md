@@ -83,17 +83,20 @@ For lighting actions (a lamp, a candle, incense) where you have a single real "u
   "type": "ritual",
   "image": "assets/items/lamp.png",
   "ritual": {
-    "label": "Light the lamp",
     "animation": "ignite",
+    "persistent": true,
     "flameAnchor": { "xPct": 50, "yPct": 23 },
-    "flameWidth": 22,
-    "flameHeight": 36,
-    "resetAfterMs": 3500
+    "flameWidth": 42,
+    "flameHeight": 95
   }
 }
 ```
 
-On click: a small SVG flame + radial-gradient glow fades in at `flameAnchor` (a percentage of the image's own rendered width/height — find the wick's position visually or via pixel inspection, since it needs to line up with that specific piece of art), flickers via a looping CSS animation (genuinely alive, not a fixed frame), then fades out and is removed after `resetAfterMs`. `flameWidth`/`flameHeight` size the flame SVG in px. A different *kind* of ignite look (not just position/size/timing) means editing the flame SVG markup and `@keyframes ritual-flame-flicker`/`ritual-glow-pulse` in `styles.css`.
+A small SVG flame + radial-gradient glow renders at `flameAnchor` (a percentage of the image's own rendered width/height — find the wick's position visually or via pixel inspection, since it needs to line up with that specific piece of art). The flame's own SVG has a `mask` fading its bottom ~20% toward transparent, so the wick shows faintly through the base rather than being fully covered; the wrapper is anchored at `-88%` (not `-100%`) so the flame's base deliberately overlaps down onto the wick instead of sitting flush above it. Motion is driven per-frame in JS as a sum of non-harmonic sine waves (see `performIgniteRitual`) rather than a CSS `@keyframes` loop, which would visibly repeat itself.
+
+- `ritual.persistent: true` (used by the lamp) means the flame lights automatically the moment the item is selected and stays lit for as long as it's active — no click needed, no auto-extinguish. Omit it (or set `false`) for a click-triggered, temporary flame instead, which reverts after `resetAfterMs` (default 3000ms) — useful for something like a struck match that's meant to burn out.
+- `flameWidth`/`flameHeight` size the flame SVG in px.
+- A different *kind* of ignite look (not just position/size/timing) means editing the flame SVG markup and the `animateFlame()` motion function in `renderer.js`, or the glow's `@keyframes ritual-glow-pulse` in `styles.css`.
 
 ### Sizing note
 

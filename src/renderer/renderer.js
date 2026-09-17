@@ -233,6 +233,13 @@ function teardownCurrent() {
   }
   stopCharmLoop();
   clearTimeout(breakResetTimer);
+  if (flameAnimationHandle) {
+    // A persistent flame (see performIgniteRitual) has no reset timeout
+    // to clean this up — without cancelling here, its rAF loop would
+    // keep running forever in the background after switching away.
+    cancelAnimationFrame(flameAnimationHandle);
+    flameAnimationHandle = null;
+  }
   charmBeadsContainer.innerHTML = '';
   charm.classList.add('hidden');
   pet.classList.add('hidden');
@@ -253,14 +260,19 @@ function applyItem(item) {
   }
 
   if (item.type === 'ritual') {
-    // Rituals (coconut-breaking, lamp lighting, …) don't hang from a
-    // string — they can be dragged freely, and a plain click (no drag)
-    // triggers the ritual action.
+    // Rituals (coconut-breaking, ash-gourd breaking, …) don't hang from
+    // a string — they can be dragged freely, and a plain click (no drag)
+    // triggers the ritual action. A `persistent` ignite ritual (the lamp)
+    // is different: it's meant to just be lit the whole time it's
+    // selected, not click-triggered and not auto-extinguishing.
     charm.classList.remove('hidden');
     renderCharmVisual(item);
     charm.style.left = `${window.innerWidth / 2 - 50}px`;
     charm.style.top = `${window.innerHeight * 0.32}px`;
     interactiveEl = charm;
+    if (item.ritual?.animation === 'ignite' && item.ritual?.persistent) {
+      performIgniteRitual(item.ritual);
+    }
     return;
   }
 
@@ -417,15 +429,24 @@ function performIgniteRitual(ritual) {
   wrap.style.top = `${anchor.yPct}%`;
   wrap.innerHTML = `
     <div class="ritual-flame-glow"></div>
-    <svg class="ritual-flame-svg" viewBox="0 0 40 65" width="${ritual.flameWidth || 34}" height="${ritual.flameHeight || 55}">
+    <svg class="ritual-flame-svg" viewBox="0 0 40 90" width="${ritual.flameWidth || 34}" height="${ritual.flameHeight || 76}">
       <defs>
-        <linearGradient id="${gradId}" x1="0" y1="1" x2="0" y2="0">
-          <stop offset="0%" stop-color="#ff7a1a"/>
-          <stop offset="55%" stop-color="#ffb23d"/>
-          <stop offset="100%" stop-color="#fff6c8"/>
+        <radialGradient id="${gradId}" cx="50%" cy="72%" r="65%">
+          <stop offset="0%" stop-color="#fffef2"/>
+          <stop offset="32%" stop-color="#fff3c2"/>
+          <stop offset="68%" stop-color="#ffd25c"/>
+          <stop offset="100%" stop-color="#f2a628"/>
+        </radialGradient>
+        <linearGradient id="${gradId}-mask" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="80%" stop-color="#ffffff"/>
+          <stop offset="100%" stop-color="#333333"/>
         </linearGradient>
+        <mask id="${gradId}-m">
+          <rect x="0" y="0" width="40" height="90" fill="url(#${gradId}-mask)"/>
+        </mask>
       </defs>
-      <path d="M20,63 C12,54 9,44 12,33 C14,23 17,15 18,8 A3.5,3.5 0 0 0 22,8 C23,15 26,23 28,33 C31,44 28,54 20,63 Z" fill="url(#${gradId})"/>
+      <path d="M20,90 C11,78 9,63 11,49 C13,33 16,21 18,13 A5,6 0 0 0 22,13 C24,21 27,33 29,49 C31,63 29,78 20,90 Z" fill="url(#${gradId})" mask="url(#${gradId}-m)"/>
     </svg>
   `;
   charm.appendChild(wrap);
@@ -444,6 +465,8 @@ function performIgniteRitual(ritual) {
     flameAnimationHandle = requestAnimationFrame(animateFlame);
   }
   flameAnimationHandle = requestAnimationFrame(animateFlame);
+
+  if (ritual.persistent) return; // stays lit for as long as the item is selected
 
   breakResetTimer = setTimeout(() => {
     wrap.classList.remove('visible');
