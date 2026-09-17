@@ -63,6 +63,26 @@
       "type": "effect",
       "glyph": "🍂",
       "effect": { "preset": "leaves" }
+    },
+    {
+      "id": "kitten",
+      "name": "Kitten",
+      "origin": "Sample item",
+      "description": "Wanders along the bottom of your screen. Click it to give it a pat.",
+      "type": "pet",
+      "glyph": "🐈",
+      "pet": { "preset": "cat" },
+      "ritual": { "label": "Give it a pat", "animation": "bounce" }
+    },
+    {
+      "id": "puppy",
+      "name": "Puppy",
+      "origin": "Sample item",
+      "description": "Trots back and forth along your screen. Click it to give it a pat.",
+      "type": "pet",
+      "glyph": "🐕",
+      "pet": { "preset": "dog" },
+      "ritual": { "label": "Give it a pat", "animation": "bounce" }
     }
   ]
 }

@@ -1,38 +1,75 @@
 const charm = document.getElementById('charm');
 const canvas = document.getElementById('effects');
+const pet = document.getElementById('pet');
+const petGlyph = pet.querySelector('.pet-glyph');
 
 let currentItem = null;
 let particleSystem = null;
+let petSystem = null;
+let interactiveEl = null; // element eligible for click-through + click reactions
+let displayInfo = null;
+
+function computeGroundY() {
+  if (!displayInfo) return window.innerHeight - 60;
+  const insetBottom =
+    displayInfo.bounds.y + displayInfo.bounds.height - (displayInfo.workArea.y + displayInfo.workArea.height);
+  return window.innerHeight - Math.max(insetBottom, 0) - 16;
+}
 
 function centerCharm() {
   const rect = charm.getBoundingClientRect();
   charm.style.left = `${window.innerWidth / 2 - rect.width / 2}px`;
 }
 
-function applyItem(item) {
-  currentItem = item;
-
+function teardownCurrent() {
   if (particleSystem) {
     particleSystem.stop();
     particleSystem = null;
   }
+  if (petSystem) {
+    petSystem.stop();
+    petSystem = null;
+  }
+  charm.classList.add('hidden');
+  pet.classList.add('hidden');
+  interactiveEl = null;
+}
 
-  if (item && item.type === 'effect') {
-    charm.classList.add('hidden');
+function applyItem(item) {
+  currentItem = item;
+  teardownCurrent();
+
+  if (!item || item.type === 'charm') {
+    charm.classList.remove('hidden');
+    charm.textContent = item ? item.glyph : '🍀';
+    if (!charm.style.left) centerCharm();
+    interactiveEl = charm;
+    return;
+  }
+
+  if (item.type === 'effect') {
     particleSystem = window.createParticleSystem(canvas, item.effect || {});
     particleSystem.start();
     return;
   }
 
-  charm.classList.remove('hidden');
-  charm.textContent = item ? item.glyph : '🍀';
-  if (!charm.style.left) {
-    centerCharm();
+  if (item.type === 'pet') {
+    pet.classList.remove('hidden');
+    petGlyph.textContent = item.glyph;
+    petSystem = window.createPetSystem(pet, { ...(item.pet || {}), groundY: computeGroundY() });
+    petSystem.start();
+    interactiveEl = pet;
   }
 }
 
-window.overlayAPI.getActiveItem().then(applyItem);
+async function init() {
+  displayInfo = await window.overlayAPI.getDisplayInfo();
+  const initialItem = await window.overlayAPI.getActiveItem();
+  applyItem(initialItem);
+}
+
 window.overlayAPI.onItemChanged(applyItem);
+init();
 
 let isDragging = false;
 let didDrag = false;
@@ -40,8 +77,8 @@ let dragOffset = { x: 0, y: 0 };
 
 function updateClickThrough(x, y) {
   const el = document.elementFromPoint(x, y);
-  const overCharm = el === charm;
-  window.overlayAPI.setIgnoreMouseEvents(!overCharm, { forward: true });
+  const overInteractive = Boolean(interactiveEl && interactiveEl.contains(el));
+  window.overlayAPI.setIgnoreMouseEvents(!overInteractive, { forward: true });
 }
 
 document.addEventListener('mousemove', (e) => {
@@ -58,25 +95,34 @@ document.addEventListener('mousemove', (e) => {
   updateClickThrough(e.clientX, e.clientY);
 });
 
-charm.addEventListener('mousedown', (e) => {
-  isDragging = true;
-  didDrag = false;
-  const rect = charm.getBoundingClientRect();
-  dragOffset.x = e.clientX - rect.left;
-  dragOffset.y = e.clientY - rect.top;
-  e.preventDefault();
-});
-
-window.addEventListener('mouseup', () => {
-  if (isDragging && !didDrag) {
-    performRitual();
+document.addEventListener('mousedown', (e) => {
+  if (currentItem?.type === 'charm' && e.target === charm) {
+    isDragging = true;
+    didDrag = false;
+    const rect = charm.getBoundingClientRect();
+    dragOffset.x = e.clientX - rect.left;
+    dragOffset.y = e.clientY - rect.top;
+    e.preventDefault();
   }
-  isDragging = false;
 });
 
-function performRitual() {
+window.addEventListener('mouseup', (e) => {
+  if (currentItem?.type === 'charm') {
+    if (isDragging && !didDrag) {
+      performRitual(charm);
+    }
+    isDragging = false;
+    return;
+  }
+
+  if (currentItem?.type === 'pet' && pet.contains(e.target)) {
+    performRitual(petGlyph);
+  }
+});
+
+function performRitual(target) {
   const animationName = currentItem?.ritual?.animation || 'flick';
-  charm.classList.remove(animationName);
-  void charm.offsetWidth; // restart the CSS animation
-  charm.classList.add(animationName);
+  target.classList.remove(animationName);
+  void target.offsetWidth; // restart the CSS animation
+  target.classList.add(animationName);
 }

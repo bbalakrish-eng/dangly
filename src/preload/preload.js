@@ -6,4 +6,5 @@ contextBridge.exposeInMainWorld('overlayAPI', {
   onItemChanged: (callback) => {
     ipcRenderer.on('item:changed', (_event, item) => callback(item));
   },
+  getDisplayInfo: () => ipcRenderer.invoke('display:get-info'),
 });

@@ -1,4 +1,4 @@
-const { app, ipcMain, BrowserWindow } = require('electron');
+const { app, ipcMain, BrowserWindow, screen } = require('electron');
 const { createOverlayWindow, sendActiveItem } = require('./overlay-window');
 const { createTray } = require('./tray');
 const { createGalleryWindow } = require('./gallery-window');
@@ -59,3 +59,8 @@ ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
 ipcMain.handle('catalog:get', () => catalog);
 ipcMain.handle('catalog:get-active', () => resolveActiveItem());
 ipcMain.on('item:select', (_event, item) => setActiveItem(item));
+
+ipcMain.handle('display:get-info', () => {
+  const display = screen.getPrimaryDisplay();
+  return { bounds: display.bounds, workArea: display.workArea };
+});
