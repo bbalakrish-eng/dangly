@@ -27,6 +27,9 @@ function createParticleSystem(canvas, rawConfig) {
       x,
       baseX: x,
       y: -20 - Math.random() * canvas.height * 0.5,
+      avoidX: 0,
+      avoidY: 0,
+      renderY: 0,
       phase: Math.random() * Math.PI * 2,
       size: config.sizeRange ? randomBetween(config.sizeRange[0], config.sizeRange[1]) : 14,
       length: config.lengthRange ? randomBetween(config.lengthRange[0], config.lengthRange[1]) : 14,
@@ -44,23 +47,35 @@ function createParticleSystem(canvas, rawConfig) {
   }
 
   function updateParticle(p, dt, elapsed) {
+    // Pure physics: fall speed and the natural side-to-side sway. Cursor
+    // avoidance is a separate offset layered on top (see below) so it
+    // isn't wiped out and re-derived from scratch every frame.
     p.y += p.speed * dt;
 
     const sway = config.swayAmplitude
       ? Math.sin(elapsed * (config.swayFrequency || 0.5) + p.phase) * config.swayAmplitude
       : 0;
-    p.x = p.baseX + sway;
+    const naturalX = p.baseX + sway;
 
     if (config.cursorAvoidRadius && cursor) {
-      const dx = p.x - cursor.x;
-      const dy = p.y - cursor.y;
+      const dx = naturalX + p.avoidX - cursor.x;
+      const dy = p.y + p.avoidY - cursor.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist < config.cursorAvoidRadius && dist > 0.01) {
-        const force = (1 - dist / config.cursorAvoidRadius) * 3;
-        p.x += (dx / dist) * force;
-        p.y += (dy / dist) * force;
+        const push = (1 - dist / config.cursorAvoidRadius) * (config.cursorAvoidStrength ?? 400) * dt;
+        p.avoidX += (dx / dist) * push;
+        p.avoidY += (dy / dist) * push;
       }
     }
+
+    // Spring the offset back toward zero once the cursor moves away, so
+    // particles resume their natural path instead of drifting forever.
+    const relax = Math.exp(-dt * 4);
+    p.avoidX *= relax;
+    p.avoidY *= relax;
+
+    p.x = naturalX + p.avoidX;
+    p.renderY = p.y + p.avoidY;
 
     if (config.rotate) {
       p.rotation += p.rotationSpeed * dt;
@@ -72,6 +87,8 @@ function createParticleSystem(canvas, rawConfig) {
   }
 
   function drawParticle(p) {
+    const y = p.renderY;
+
     if (config.shape === 'line') {
       const angle = ((config.angleDegrees || 0) * Math.PI) / 180;
       const dx = Math.sin(angle) * p.length;
@@ -79,14 +96,14 @@ function createParticleSystem(canvas, rawConfig) {
       ctx.strokeStyle = config.color || 'rgba(255, 255, 255, 0.6)';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.moveTo(p.x, p.y);
-      ctx.lineTo(p.x + dx, p.y + dy);
+      ctx.moveTo(p.x, y);
+      ctx.lineTo(p.x + dx, y + dy);
       ctx.stroke();
       return;
     }
 
     ctx.save();
-    ctx.translate(p.x, p.y);
+    ctx.translate(p.x, y);
     if (config.rotate) ctx.rotate(p.rotation);
     ctx.font = `${p.size}px sans-serif`;
     ctx.fillStyle = config.color || '#ffffff';

@@ -1,7 +1,7 @@
 const { Tray, Menu, app, nativeImage } = require('electron');
 const path = require('path');
 
-function createTray({ overlayWindow, onOpenGallery }) {
+function createTray({ onOpenGallery, onToggleVisibility }) {
   const iconPath = path.join(__dirname, '..', '..', 'assets', 'tray-icon.png');
   const icon = nativeImage.createFromPath(iconPath).resize({ width: 18, height: 18 });
   const tray = new Tray(icon);
@@ -14,16 +14,11 @@ function createTray({ overlayWindow, onOpenGallery }) {
     },
     { type: 'separator' },
     {
+      id: 'showToggle',
       label: 'Show Charm',
       type: 'checkbox',
       checked: true,
-      click: (menuItem) => {
-        if (menuItem.checked) {
-          overlayWindow.show();
-        } else {
-          overlayWindow.hide();
-        }
-      },
+      click: () => onToggleVisibility(),
     },
     { type: 'separator' },
     {
@@ -33,7 +28,13 @@ function createTray({ overlayWindow, onOpenGallery }) {
   ]);
 
   tray.setContextMenu(contextMenu);
-  return tray;
+
+  function syncShowToggle(visible) {
+    const item = contextMenu.getMenuItemById('showToggle');
+    if (item) item.checked = visible;
+  }
+
+  return { tray, syncShowToggle };
 }
 
 module.exports = { createTray };

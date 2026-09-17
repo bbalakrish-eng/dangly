@@ -1,14 +1,26 @@
-const { app, ipcMain, BrowserWindow, screen } = require('electron');
+const { app, ipcMain, BrowserWindow, screen, globalShortcut } = require('electron');
 const { createOverlayWindow, sendActiveItem } = require('./overlay-window');
 const { createTray } = require('./tray');
 const { createGalleryWindow } = require('./gallery-window');
 const { loadCatalog } = require('../shared/catalog');
 const { loadSettings, saveSettings } = require('./store');
 
+const TOGGLE_VISIBILITY_SHORTCUT = 'Control+Shift+D';
+
 let overlayWindow = null;
 let galleryWindow = null;
 let catalog = [];
 let settings = null;
+let trayHandle = null;
+
+function toggleOverlayVisibility() {
+  if (overlayWindow.isVisible()) {
+    overlayWindow.hide();
+  } else {
+    overlayWindow.show();
+  }
+  trayHandle.syncShowToggle(overlayWindow.isVisible());
+}
 
 function resolveActiveItem() {
   return settings.activeItem || catalog[0] || null;
@@ -44,11 +56,20 @@ app.whenReady().then(() => {
     sendActiveItem(overlayWindow, resolveActiveItem());
   });
 
-  createTray({ overlayWindow, onOpenGallery: openGallery });
+  trayHandle = createTray({ onOpenGallery: openGallery, onToggleVisibility: toggleOverlayVisibility });
+
+  const registered = globalShortcut.register(TOGGLE_VISIBILITY_SHORTCUT, toggleOverlayVisibility);
+  if (!registered) {
+    console.error(`Failed to register global shortcut: ${TOGGLE_VISIBILITY_SHORTCUT}`);
+  }
 });
 
 app.on('window-all-closed', () => {
   // Stay resident in the tray/menu bar instead of quitting.
+});
+
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
 });
 
 ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
