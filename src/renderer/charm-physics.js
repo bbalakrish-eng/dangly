@@ -71,6 +71,17 @@ function createCharmPhysics({ segments = 12, segmentLength = 15.5, initialAnchor
 
   function updateCursor(x, y) {
     cursor = { x, y };
+    // Triggered here (on an actual mousemove event), not from the
+    // continuous physics tick — applyHoverReaction() used to run every
+    // fixed step regardless of whether the cursor had actually moved, so
+    // simply resting the mouse near the charm and walking away kept
+    // firing the same push, 120 times a second, forever. Since the push
+    // is directional (away from wherever the cursor sits) and gravity
+    // only pulls straight down, that compounded into a steady one-way
+    // drift instead of a settling flinch. Tying it to real mousemove
+    // events means it can only ever fire while the cursor is actually
+    // moving, so it naturally stops the moment the mouse does.
+    applyHoverReaction(FIXED_STEP);
   }
 
   function setSize(width, height) {
@@ -83,7 +94,9 @@ function createCharmPhysics({ segments = 12, segmentLength = 15.5, initialAnchor
   // previous position, which Verlet integration reads as an implicit
   // velocity kick next step, so it eases back naturally via the existing
   // gravity/damping rather than needing a separate spring model. Called
-  // from stepOnce() with the fixed timestep, not from update() with the
+  // from updateCursor() on an actual mousemove event (see there for why
+  // — it used to run continuously from stepOnce() instead, which caused
+  // a slow one-way drift), always with the fixed timestep rather than
   // real (variable) frame time — the push scales with dt², which made it
   // very sensitive to ordinary frame-timing jitter (16ms vs 18ms is a
   // small dt difference but a much larger one once squared), reading as
@@ -118,7 +131,6 @@ function createCharmPhysics({ segments = 12, segmentLength = 15.5, initialAnchor
 
   function stepOnce() {
     elapsed += FIXED_STEP;
-    applyHoverReaction(FIXED_STEP);
     const n = points.length;
     const wind = 0.0035 * Math.sin(elapsed * 0.55) + 0.002 * Math.sin(elapsed * 1.3 + 0.8);
 

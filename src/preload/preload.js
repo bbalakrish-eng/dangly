@@ -8,4 +8,7 @@ contextBridge.exposeInMainWorld('overlayAPI', {
   },
   getDisplayInfo: () => ipcRenderer.invoke('display:get-info'),
   resolveAssetPath: (relativePath) => ipcRenderer.invoke('assets:resolve', relativePath),
+  onSystemResume: (callback) => {
+    ipcRenderer.on('system:resume', () => callback());
+  },
 });

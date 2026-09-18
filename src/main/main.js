@@ -1,4 +1,4 @@
-const { app, ipcMain, BrowserWindow, screen, globalShortcut } = require('electron');
+const { app, ipcMain, BrowserWindow, screen, globalShortcut, powerMonitor } = require('electron');
 const path = require('path');
 const { pathToFileURL } = require('url');
 const { createOverlayWindow, sendActiveItem } = require('./overlay-window');
@@ -45,6 +45,30 @@ function openGallery() {
   });
 }
 
+// The overlay window's bounds are only ever set once, at creation, to
+// whatever display was primary at that moment (see createOverlayWindow).
+// An external monitor commonly disconnects — or is simply slow to
+// redetect — across a sleep/wake cycle; when that happens the window
+// keeps its old bounds from a display arrangement that may no longer
+// exist, so its content (positioned relative to *its own* width/height)
+// ends up somewhere that only made sense on the old screen. Re-fetching
+// and re-applying the current primary display's bounds keeps the window
+// itself in sync before the renderer recalculates anything from
+// `window.innerWidth`/`innerHeight`.
+function resyncOverlayBounds() {
+  if (!overlayWindow || overlayWindow.isDestroyed()) return;
+  const { bounds } = screen.getPrimaryDisplay();
+  const current = overlayWindow.getBounds();
+  if (
+    current.x !== bounds.x ||
+    current.y !== bounds.y ||
+    current.width !== bounds.width ||
+    current.height !== bounds.height
+  ) {
+    overlayWindow.setBounds(bounds);
+  }
+}
+
 app.whenReady().then(() => {
   if (process.platform === 'darwin' && app.dock) {
     app.dock.hide();
@@ -57,6 +81,50 @@ app.whenReady().then(() => {
   overlayWindow.webContents.once('did-finish-load', () => {
     sendActiveItem(overlayWindow, resolveActiveItem());
   });
+  // A transparent, always-on-top, GPU-composited overlay window is
+  // exactly the shape of window most likely to have its renderer killed
+  // by the OS across a long display sleep (GPU context loss on wake is a
+  // known Electron/Chromium failure mode) — reload it if that happens
+  // instead of leaving a permanently frozen/blank overlay on screen.
+  overlayWindow.webContents.on('render-process-gone', (_event, details) => {
+    console.error('Overlay renderer process gone, reloading:', details);
+    if (overlayWindow && !overlayWindow.isDestroyed()) {
+      overlayWindow.webContents.once('did-finish-load', () => {
+        sendActiveItem(overlayWindow, resolveActiveItem());
+      });
+      overlayWindow.reload();
+    }
+  });
+  // `document.visibilitychange` (used renderer-side) tracks window
+  // occlusion/minimization, not actual OS sleep — confirmed by testing:
+  // a real display sleep left the charm's animation loop frozen with no
+  // visibilitychange ever firing to catch it. `powerMonitor` is Electron's
+  // dedicated main-process API for genuine system suspend/resume, so it's
+  // the one that actually fires here; tell the renderer explicitly so it
+  // can force a clean restart of whatever's currently animating.
+  powerMonitor.on('resume', () => {
+    resyncOverlayBounds();
+    if (overlayWindow && !overlayWindow.isDestroyed()) {
+      overlayWindow.webContents.send('system:resume');
+    }
+    // An external monitor can take a moment to redetect after wake —
+    // re-check once more shortly after in case it wasn't back yet on the
+    // first pass, and nudge the renderer again if the bounds actually
+    // changed as a result.
+    setTimeout(() => {
+      const before = overlayWindow && !overlayWindow.isDestroyed() ? overlayWindow.getBounds() : null;
+      resyncOverlayBounds();
+      const after = overlayWindow && !overlayWindow.isDestroyed() ? overlayWindow.getBounds() : null;
+      if (before && after && JSON.stringify(before) !== JSON.stringify(after)) {
+        overlayWindow.webContents.send('system:resume');
+      }
+    }, 2000);
+  });
+  // Covers a monitor being connected/disconnected/reconfigured
+  // independent of any sleep cycle too, not just around wake.
+  screen.on('display-added', resyncOverlayBounds);
+  screen.on('display-removed', resyncOverlayBounds);
+  screen.on('display-metrics-changed', resyncOverlayBounds);
 
   trayHandle = createTray({ onOpenGallery: openGallery, onToggleVisibility: toggleOverlayVisibility });
 

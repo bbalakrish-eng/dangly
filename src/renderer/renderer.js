@@ -62,7 +62,24 @@ let triggerCharmFlip = () => {};
 
 function startCharmLoop() {
   stopCharmLoop();
-  charmPhysics = window.createCharmPhysics({ initialAnchorX: window.innerWidth - 200, anchorY: 6 });
+  // Prefer the width from `displayInfo` (a direct round-trip to
+  // `screen.getPrimaryDisplay()` in the main process) over
+  // `window.innerWidth` here: after the main process resizes this window
+  // to match a display change (see resyncOverlayBounds in main.js, e.g.
+  // an external monitor reconnecting after sleep), that resize reaching
+  // the renderer and `window.innerWidth` actually updating is an
+  // asynchronous, unsynchronized step — recalculating the anchor right
+  // when 'system:resume' arrives could still read the *old* width for a
+  // moment, anchoring correctly-relative-to-the-wrong-screen-size (e.g.
+  // "200px from the right edge of the old, different-sized display"),
+  // which reads as the charm having drifted to the middle. `displayInfo`
+  // is refreshed via its own IPC round-trip right before this runs (see
+  // the 'system:resume' handler), so it reflects the display Electron
+  // itself just resized the window to, not whatever the DOM has caught
+  // up to yet.
+  const referenceWidth = displayInfo?.bounds?.width ?? window.innerWidth;
+  const initialAnchorX = referenceWidth - 200;
+  charmPhysics = window.createCharmPhysics({ initialAnchorX, anchorY: 6 });
   charmStringSvg.classList.remove('hidden');
 
   let flipElapsed = FLIP_DURATION; // start at rest (no flip in progress)
@@ -275,6 +292,13 @@ function teardownCurrent() {
     cancelAnimationFrame(flameAnimationHandle);
     flameAnimationHandle = null;
   }
+  // The flame overlay and the shatter-photo overlay are both appended as
+  // direct children of `charm` itself (siblings of `charmInner`, not
+  // inside it), so clearing `charmInner`'s contents for the next item
+  // doesn't touch them — without this, switching away from a lit lamp
+  // (or mid-shatter) left that overlay permanently stuck on `charm`,
+  // showing up on top of whatever item got selected next.
+  charm.querySelectorAll('.ritual-flame-wrap, .ritual-shatter-overlay').forEach((el) => el.remove());
   charmBeadsContainer.innerHTML = '';
   charm.classList.add('hidden');
   pet.classList.add('hidden');
@@ -302,8 +326,10 @@ function applyItem(item) {
     // selected, not click-triggered and not auto-extinguishing.
     charm.classList.remove('hidden');
     renderCharmVisual(item);
-    charm.style.left = `${window.innerWidth / 2 - 50}px`;
-    charm.style.top = `${window.innerHeight * 0.32}px`;
+    const refWidth = displayInfo?.bounds?.width ?? window.innerWidth;
+    const refHeight = displayInfo?.bounds?.height ?? window.innerHeight;
+    charm.style.left = `${refWidth / 2 - 50}px`;
+    charm.style.top = `${refHeight * 0.32}px`;
     interactiveEl = charm;
     if (item.ritual?.animation === 'ignite' && item.ritual?.persistent) {
       performIgniteRitual(item.ritual);
@@ -337,6 +363,43 @@ async function init() {
 
 window.overlayAPI.onItemChanged(applyItem);
 init();
+
+// A long display sleep can suspend this page's animation timers
+// (requestAnimationFrame/setInterval) without necessarily killing the
+// renderer process outright — confirmed by leaving a charm running
+// across a multi-hour sleep and finding its own periodic diagnostic
+// logger had silently stopped ticking days before the process actually
+// exited. Chromium is expected to resume rAF once the page is visible
+// again, but re-applying the current item on resume is a cheap,
+// unconditional safety net regardless of whether that resume happens
+// cleanly on its own — it forces a fresh animation-frame chain (and a
+// reset `lastTime`, avoiding any stale/huge delta) rather than leaving
+// the charm's position frozen or drifted from whatever state it was in
+// when the system went to sleep. Kept as a cheap secondary safety net,
+// but testing showed this event never actually fires for a real display
+// sleep on this window (it tracks occlusion/minimization, not OS
+// suspend) — see the 'system:resume' listener below for the one that
+// does.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && currentItem) {
+    applyItem(currentItem);
+  }
+});
+
+// Fired from the main process's `powerMonitor.on('resume', ...)` —
+// Electron's actual API for OS-level sleep/wake, confirmed by testing to
+// fire when 'visibilitychange' above does not. Same recovery: re-apply
+// the current item to force a fresh animation loop instead of leaving
+// whatever was frozen (or briefly running with the display off) on
+// screen.
+window.overlayAPI.onSystemResume(async () => {
+  // Re-fetch fresh from the main process (a direct read of
+  // screen.getPrimaryDisplay()) rather than trusting window.innerWidth —
+  // see the comment in startCharmLoop() for why that can still be stale
+  // at this exact moment.
+  displayInfo = await window.overlayAPI.getDisplayInfo();
+  if (currentItem) applyItem(currentItem);
+});
 
 let isDragging = false;
 let didDrag = false;
