@@ -12,7 +12,7 @@
 //     sideways, so there's no separate "handle" to find — one drag
 //     gesture does both reposition-the-hang-point and swing-the-charm
 
-function createCharmPhysics({ segments = 12, segmentLength = 15.5, initialAnchorX = 0, anchorY = 6 } = {}) {
+function createCharmPhysics({ segments = 12, segmentLength = 15.5, initialAnchorX = 0, anchorY = 0 } = {}) {
   const GRAVITY_STEP = 0.125;
   const DAMPING = 0.98;
   const FIXED_STEP = 1 / 120;
@@ -123,8 +123,17 @@ function createCharmPhysics({ segments = 12, segmentLength = 15.5, initialAnchor
     const dy = b.y - cursor.y;
     const dist = Math.max(Math.hypot(dx, dy), 0.5);
 
-    const falloff = (HOVER_RADIUS - edgeDist) / HOVER_RADIUS;
-    const push = falloff * falloff * HOVER_STRENGTH * dt * dt;
+    // Shaped to peak partway through the approach and ease back off near
+    // zero once the cursor actually reaches the charm — not the linear
+    // falloff this replaced, which was strongest exactly at edgeDist=0,
+    // meaning the push was hardest right when the user was trying to
+    // click it. Each mousemove during an approach applies one of these
+    // (see updateCursor), so a push that never lets up right up to the
+    // edge made the charm dodge away from the cursor before a click could
+    // land, effectively fighting every attempt to grab it.
+    const t = edgeDist / HOVER_RADIUS; // 0 = touching it, 1 = at the radius edge
+    const falloff = 4 * (1 - t) * t;
+    const push = falloff * HOVER_STRENGTH * dt * dt;
     b.x += (dx / dist) * push;
     b.y += (dy / dist) * push * 0.4;
   }

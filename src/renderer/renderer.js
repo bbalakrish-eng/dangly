@@ -79,7 +79,7 @@ function startCharmLoop() {
   // up to yet.
   const referenceWidth = displayInfo?.bounds?.width ?? window.innerWidth;
   const initialAnchorX = referenceWidth - 200;
-  charmPhysics = window.createCharmPhysics({ initialAnchorX, anchorY: 6 });
+  charmPhysics = window.createCharmPhysics({ initialAnchorX, anchorY: 0 });
   charmStringSvg.classList.remove('hidden');
 
   let flipElapsed = FLIP_DURATION; // start at rest (no flip in progress)
@@ -116,7 +116,18 @@ function startCharmLoop() {
     // real hanging object rotates to align with what it's hanging from
     // as it swings, not just translate while staying upright. Separate
     // from (and added to) the brief coin-flip rotation above.
-    const swingTilt = Math.max(-35, Math.min(35, charmPhysics.getSwingAngleDegrees()));
+    // Held upright while actively being dragged — the segment between the
+    // bob (kinematically pinned to the cursor) and the point above it
+    // hasn't caught up to a straight line yet on any given frame, so its
+    // angle to the bob can swing wildly from ordinary hand tremor or fast
+    // direction changes. Since that angle drives this rotation, applying
+    // it live during a drag reads as the whole charm swaying left and
+    // right independent of the cursor, even though its actual position is
+    // locked exactly to it. Swinging is a "hanging freely" behavior, which
+    // a drag isn't — it resumes the moment the drag ends.
+    const swingTilt = charmPhysics.isDragging()
+      ? 0
+      : Math.max(-35, Math.min(35, charmPhysics.getSwingAngleDegrees()));
     // Split across two elements rather than combined into one transform:
     // scaleX (non-uniform) composed with a large rotate in a single
     // matrix shears the shape into a skewed-looking parallelogram instead
