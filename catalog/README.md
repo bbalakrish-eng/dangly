@@ -22,6 +22,7 @@ Add an entry to `items.json` — no code changes needed. Restart the app (or reo
   { "type": "charm", "image": "assets/items/evil-eye.svg" }
   ```
   `image` is a path relative to the project root (resolved at runtime via `assets:resolve` in `src/main/main.js`, so it works identically in dev and in a packaged build). Drop the art file under `assets/items/` and point to it — no code changes. Art is sized by height (`72px`, aspect ratio preserved), so non-square art isn't squashed into a fixed box.
+- **Photo/PNG art is shipped as WebP, not PNG.** Keep the full-size master PNG in `art-source/items/` (outside the build, never shipped) and run `python3 scripts/optimize-images.py` (or pass a specific file) — it writes a q92 WebP with transparency into `assets/items/`, sized to ~800px on the long side (charms render at ~220px, 440px on Retina; small pieces like chili/lemon get smaller sizes, see the `OVERRIDES` table in the script). That took the art from ~28 MB to ~1.5 MB with no visible loss. Then point the catalog at the `.webp`. SVGs are used as-is.
 
 ## Charm items (clover, evil eye, …) — hang from a string
 
@@ -48,9 +49,9 @@ Add an entry to `items.json` — no code changes needed. Restart the app (or reo
 - Optional `chain`: separate real-photo images (not one flat combined artwork) threaded along the cord above the charm — e.g. a garland of individual chilies above a lemon:
   ```json
   "chain": [
-    { "image": "assets/items/chili.png", "height": 40 },
-    { "image": "assets/items/chili.png", "height": 40 },
-    { "image": "assets/items/chili.png", "height": 40 }
+    { "image": "assets/items/chili.webp", "height": 40 },
+    { "image": "assets/items/chili.webp", "height": 40 },
+    { "image": "assets/items/chili.webp", "height": 40 }
   ],
   "chainGap": -6,
   "chainClearance": 0
@@ -93,7 +94,7 @@ For lighting actions (a lamp, a candle, incense) where you have a single real "u
   "id": "unique-id",
   "category": "Rituals",
   "type": "ritual",
-  "image": "assets/items/lamp.png",
+  "image": "assets/items/lamp.webp",
   "ritual": {
     "animation": "ignite",
     "persistent": true,

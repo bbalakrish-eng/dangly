@@ -24,8 +24,14 @@ function toggleOverlayVisibility() {
   trayHandle.syncShowToggle(overlayWindow.isVisible());
 }
 
+// The saved selection is a full copy of the item as it was when picked, so
+// using it directly meant an update that changed or renamed an item's files
+// (or removed the item) left the user with stale paths and a broken image.
+// Look it up by id in the current catalog instead, falling back to the
+// first item if it no longer exists.
 function resolveActiveItem() {
-  return settings.activeItem || catalog[0] || null;
+  const savedId = settings.activeItem?.id;
+  return catalog.find((item) => item.id === savedId) || catalog[0] || null;
 }
 
 function setActiveItem(item) {
