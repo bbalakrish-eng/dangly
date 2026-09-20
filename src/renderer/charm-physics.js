@@ -35,6 +35,13 @@ function createCharmPhysics({ segments = 12, segmentLength = 15.5, initialAnchor
   // small emoji-sized charm; it barely reached the top of a 200px+ image.
   let charmWidth = 40;
   let charmHeight = 40;
+  // How far the visible art extends *above* the bob — normally 0 (the
+  // art hangs below the bob, its top attachment point), but a charm with
+  // extra elements threaded above it (see `chain` in renderer.js, e.g. a
+  // garland of chilies above a lemon) needs that extra span included too,
+  // or hovering over those upper elements wouldn't trigger this reaction
+  // at all — only the space below the bob was ever considered.
+  let charmAboveHeight = 0;
 
   const points = Array.from({ length: segments }, (_, i) => ({
     x: anchorX,
@@ -84,9 +91,10 @@ function createCharmPhysics({ segments = 12, segmentLength = 15.5, initialAnchor
     applyHoverReaction(FIXED_STEP);
   }
 
-  function setSize(width, height) {
+  function setSize(width, height, aboveHeight = 0) {
     charmWidth = width;
     charmHeight = height;
+    charmAboveHeight = aboveHeight;
   }
 
   // A subtle "flinch" when the cursor passes near the charm without
@@ -111,7 +119,7 @@ function createCharmPhysics({ segments = 12, segmentLength = 15.5, initialAnchor
     // tall/wide image triggers the reaction, not only near its very top.
     const rectX = b.x - charmWidth / 2;
     const nearestX = Math.max(rectX, Math.min(cursor.x, rectX + charmWidth));
-    const nearestY = Math.max(b.y, Math.min(cursor.y, b.y + charmHeight));
+    const nearestY = Math.max(b.y - charmAboveHeight, Math.min(cursor.y, b.y + charmHeight));
     const edgeDx = nearestX - cursor.x;
     const edgeDy = nearestY - cursor.y;
     const edgeDist = Math.hypot(edgeDx, edgeDy);

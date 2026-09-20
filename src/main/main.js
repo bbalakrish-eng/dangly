@@ -102,11 +102,14 @@ app.whenReady().then(() => {
   // dedicated main-process API for genuine system suspend/resume, so it's
   // the one that actually fires here; tell the renderer explicitly so it
   // can force a clean restart of whatever's currently animating.
-  powerMonitor.on('resume', () => {
+  function resyncAndNotify() {
     resyncOverlayBounds();
     if (overlayWindow && !overlayWindow.isDestroyed()) {
       overlayWindow.webContents.send('system:resume');
     }
+  }
+  powerMonitor.on('resume', () => {
+    resyncAndNotify();
     // An external monitor can take a moment to redetect after wake —
     // re-check once more shortly after in case it wasn't back yet on the
     // first pass, and nudge the renderer again if the bounds actually
@@ -121,10 +124,19 @@ app.whenReady().then(() => {
     }, 2000);
   });
   // Covers a monitor being connected/disconnected/reconfigured
-  // independent of any sleep cycle too, not just around wake.
-  screen.on('display-added', resyncOverlayBounds);
-  screen.on('display-removed', resyncOverlayBounds);
-  screen.on('display-metrics-changed', resyncOverlayBounds);
+  // independent of any sleep cycle too — e.g. unplugging an external
+  // monitor and falling back to the laptop's own (smaller) display.
+  // Resizing the window alone isn't enough: the charm's rope anchor is
+  // computed once from the display width cached in the renderer
+  // (`displayInfo`) and never recalculated on its own, so without also
+  // telling the renderer to refresh, a charm anchored near the *old*
+  // (wider) display's right edge stays at that same x-coordinate — now
+  // off the edge of the new, narrower screen entirely. Effects/pets
+  // don't use that cached value so they were unaffected, which is why
+  // only charms went missing.
+  screen.on('display-added', resyncAndNotify);
+  screen.on('display-removed', resyncAndNotify);
+  screen.on('display-metrics-changed', resyncAndNotify);
 
   trayHandle = createTray({ onOpenGallery: openGallery, onToggleVisibility: toggleOverlayVisibility });
 

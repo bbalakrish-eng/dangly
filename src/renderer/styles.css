@@ -47,6 +47,20 @@ html, body {
      swing tilt alone ranges up to 35°. Nesting keeps each transform in
      its own local space so they compose cleanly instead of shearing. */
   transform-origin: top center;
+  /* Stacks the main charm image with an optional `belowImage` decoration
+     (e.g. a garland's tie-off knot) directly beneath it as one rigid
+     unit — most charms only ever have the one image, so this is a no-op
+     for them. */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.charm-below-image {
+  display: block;
+  width: auto;
+  margin-top: -4px;
+  pointer-events: none;
 }
 
 .charm-image {
@@ -175,6 +189,23 @@ html, body {
   transform: translate(-50%, -50%);
   pointer-events: none;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+.charm-chain {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.charm-chain-element {
+  position: absolute;
+  display: block;
+  width: auto;
+  transform-origin: center center;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
 .pet {

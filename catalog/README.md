@@ -45,6 +45,18 @@ Add an entry to `items.json` — no code changes needed. Restart the app (or reo
   - Each bead is a drawn SVG circle (`kind: "pearl"` — a glossy radial-gradient sphere, or `"eye"` — a mini concentric-circle nazar), not emoji. Emoji glyph metrics are imprecise and platform-dependent, which made pixel-accurate spacing impossible to tune; drawn circles let spacing be computed as exact radius math instead.
   - Positioning is **exact geometry**, not guesswork: `beadClearance` is the edge-to-edge gap (px) from the charm's top to the nearest bead's edge. `beadGap` is the edge-to-edge gap (px) between each pair of beads further up the rope — one number for every gap, or an array read outward from the charm, e.g. `[-2, 0]`. **`0` means the two circles are exactly tangent (touching, no overlap); negative overlaps them** (like real threaded beads resting against each other); positive leaves visible space. Since it's radius-sum math, there's no need to iteratively guess a pixel value the way the old glyph-based version required.
   - Beads ride along the rope's own physics points (`getPoints()`/`getSegmentLength()` in `charm-physics.js`) — purely visual, not separately simulated.
+- Optional `chain`: separate real-photo images (not one flat combined artwork) threaded along the cord above the charm — e.g. a garland of individual chilies above a lemon:
+  ```json
+  "chain": [
+    { "image": "assets/items/chili.png", "height": 40 },
+    { "image": "assets/items/chili.png", "height": 40 },
+    { "image": "assets/items/chili.png", "height": 40 }
+  ],
+  "chainGap": -6,
+  "chainClearance": 0
+  ```
+  - Same geometry convention as `beads` (`chainClearance`/`chainGap`, edge-to-edge, 0 = tangent, negative = overlapping), but measured in half-*heights* since these are images, not circles. Each link also gets its own small rotation from the rope's *local* curve at that point (`angleAtStepsFromBob()` in `renderer.js`, scaled down via `rotationScale`, default 0.5, per link) — so the garland bends along the string's actual shape during a swing instead of moving as one rigid unit. That rotation is a plain `rotate()`, never combined with a non-uniform scale on the same element, so it can't produce the shear/skew the coin-flip effect had to be fixed for.
+  - Use this instead of one combined flat image whenever the individual pieces should read as separate, independently-hinged objects rather than a single rigid charm.
 
 ## Ritual items (coconut-breaking, lamp lighting, ash-gourd breaking, …) — fixed spot, multi-stage click action
 

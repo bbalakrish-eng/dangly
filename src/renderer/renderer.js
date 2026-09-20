@@ -6,6 +6,7 @@ const petGlyph = pet.querySelector('.pet-glyph');
 const charmStringSvg = document.getElementById('charmString');
 const charmStringLine = document.getElementById('charmStringLine');
 const charmBeadsContainer = document.getElementById('charmBeads');
+const charmChainContainer = document.getElementById('charmChain');
 
 let currentItem = null;
 let particleSystem = null;
@@ -93,7 +94,13 @@ function startCharmLoop() {
     const dt = Math.min((time - lastTime) / 1000, 0.05);
     lastTime = time;
 
-    charmPhysics.setSize(charm.offsetWidth, charm.offsetHeight);
+    // A chain (see renderChain/positionChain) threads extra elements
+    // above the bob, outside `charm`'s own box — without including that
+    // span here, hovering over them never triggered the reaction below,
+    // only the plain image did.
+    const chainDistances = computeChainDistances(currentItem);
+    const chainAboveHeight = chainDistances.length ? chainDistances[0] + (currentItem.chain[0].height ?? 0) / 2 : 0;
+    charmPhysics.setSize(charm.offsetWidth, charm.offsetHeight, chainAboveHeight);
     charmPhysics.update(dt);
     const bob = charmPhysics.render(charmStringLine);
     // The string should end at the charm's TOP (like a real pendant tied
@@ -109,6 +116,7 @@ function startCharmLoop() {
     // pixels of overlap makes the connection visually solid regardless.
     charm.style.top = `${bob.y - 4}px`;
     positionBeads();
+    positionChain();
 
     flipElapsed = Math.min(flipElapsed + dt, FLIP_DURATION);
     const flip = computeFlip(flipElapsed);
@@ -169,6 +177,34 @@ function beadMarkup(bead) {
       <circle cx="50" cy="50" r="20" fill="#3aa7e0"/>
       <circle cx="50" cy="50" r="10" fill="#0b1530"/>
       <circle cx="46" cy="46" r="3" fill="#ffffff" opacity="0.85"/>
+    </svg>`;
+  }
+
+  if (bead.kind === 'ruby') {
+    const gradId = `rubyGrad-${beadGradientCounter++}`;
+    return `<svg viewBox="0 0 100 100" width="${d}" height="${d}">
+      <defs>
+        <radialGradient id="${gradId}" cx="35%" cy="30%" r="70%">
+          <stop offset="0%" stop-color="#ff8f8f"/>
+          <stop offset="55%" stop-color="#d81e2c"/>
+          <stop offset="100%" stop-color="#6e0f14"/>
+        </radialGradient>
+      </defs>
+      <circle cx="50" cy="50" r="47" fill="url(#${gradId})"/>
+    </svg>`;
+  }
+
+  if (bead.kind === 'gold') {
+    const gradId = `goldGrad-${beadGradientCounter++}`;
+    return `<svg viewBox="0 0 100 100" width="${d}" height="${d}">
+      <defs>
+        <radialGradient id="${gradId}" cx="35%" cy="30%" r="70%">
+          <stop offset="0%" stop-color="#fff6c2"/>
+          <stop offset="55%" stop-color="#f2c218"/>
+          <stop offset="100%" stop-color="#a3760a"/>
+        </radialGradient>
+      </defs>
+      <circle cx="50" cy="50" r="47" fill="url(#${gradId})"/>
     </svg>`;
   }
 
@@ -247,18 +283,142 @@ function positionBeads() {
   }
 }
 
+// The local direction of the rope right around a given "steps from bob"
+// position — used to give each chain element (see renderChain) its own
+// slight tilt matching how the string actually curves there, rather than
+// every link sharing one whole-object rotation. Only ever feeds a plain
+// rotate() (never combined with a non-uniform scale on the same
+// element), so it can't produce the shear/skew a scaleX+rotate
+// combination did for the coin-flip effect.
+function angleAtStepsFromBob(points, bobIndex, steps) {
+  const a = pointAtStepsFromBob(points, bobIndex, steps + 0.5);
+  const b = pointAtStepsFromBob(points, bobIndex, steps - 0.5);
+  if (!a || !b) return 0;
+  return (Math.atan2(b.x - a.x, b.y - a.y) * 180) / Math.PI;
+}
+
+// A "chain" is a sequence of separate images threaded along the rope
+// above the main charm — e.g. a garland of individual chilies above a
+// lemon — rather than one flat artwork. Each link is a plain <img>,
+// positioned like a bead but given its own small rotation from the
+// rope's local curve there (see angleAtStepsFromBob), so the whole
+// garland bends naturally along the string's actual shape during a
+// swing instead of moving as one rigid unit. `item.chain` is ordered
+// outward from the charm, same convention as `item.beads`.
+//
+// Links are meant to stay close to however they were actually
+// photographed (e.g. a chili shot lying roughly horizontal) and just
+// stack at different points down the rope, each with a small tilt of
+// its own — not rotated up onto end to "hang" vertically. Center-pivoted
+// like a bead; a big rotation pivoting from the center is what read as
+// an incoherent squiggle earlier, not centering itself.
+function renderChain(item) {
+  charmChainContainer.innerHTML = '';
+  (item?.chain || []).forEach((link) => {
+    const img = document.createElement('img');
+    img.className = 'charm-chain-element';
+    img.draggable = false;
+    img.style.height = `${link.height}px`;
+    charmChainContainer.appendChild(img);
+    window.overlayAPI.resolveAssetPath(link.image).then((url) => {
+      img.src = url;
+    });
+  });
+}
+
+// Distance from the bob to each chain link's center, in px, walking
+// outward (index 0 = farthest). Shared by positionChain (to place each
+// link) and startCharmLoop's frame loop (to size the hover-reaction
+// rectangle so it covers the whole garland, not just the main image).
+function computeChainDistances(item) {
+  const chain = item?.chain;
+  if (!chain || !chain.length) return [];
+
+  const clearanceGap = item?.chainClearance ?? 0;
+  const rawGap = item?.chainGap ?? -6;
+  const gapForIndex = (i) => (Array.isArray(rawGap) ? rawGap[i] ?? rawGap[rawGap.length - 1] ?? 0 : rawGap);
+
+  const distFromBob = new Array(chain.length);
+  distFromBob[chain.length - 1] = chain[chain.length - 1].height / 2 + clearanceGap;
+  for (let i = chain.length - 2; i >= 0; i--) {
+    const gapIndex = chain.length - 2 - i;
+    distFromBob[i] = distFromBob[i + 1] + chain[i + 1].height / 2 + chain[i].height / 2 + gapForIndex(gapIndex);
+  }
+  return distFromBob;
+}
+
+function positionChain() {
+  const chain = currentItem?.chain;
+  if (!chain || !chain.length || !charmPhysics) return;
+
+  const points = charmPhysics.getPoints();
+  const segmentLength = charmPhysics.getSegmentLength();
+  const bobIndex = points.length - 1;
+  const wrappers = charmChainContainer.children;
+  const distFromBob = computeChainDistances(currentItem);
+
+  for (let i = 0; i < chain.length; i++) {
+    const steps = distFromBob[i] / segmentLength;
+    const point = pointAtStepsFromBob(points, bobIndex, steps);
+    const wrapper = wrappers[i];
+    if (!point || !wrapper) continue;
+    const rotationScale = chain[i].rotationScale ?? 0.5;
+    const baseRotation = chain[i].baseRotation ?? 0;
+    const angle = baseRotation + angleAtStepsFromBob(points, bobIndex, steps) * rotationScale;
+    wrapper.style.left = `${point.x}px`;
+    wrapper.style.top = `${point.y}px`;
+    wrapper.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+  }
+}
+
 function renderCharmVisual(item) {
   charmInner.innerHTML = '';
   clearTimeout(breakResetTimer);
+  window.__gapDebugLogged = false;
 
   if (item && item.image) {
     const img = document.createElement('img');
     img.className = item.type === 'ritual' ? 'charm-image ritual-image' : 'charm-image';
     img.draggable = false;
+    // Overrides the shared 220px default for a charm whose proportions
+    // need to sit deliberately smaller relative to other elements it's
+    // paired with (e.g. a lemon next to a garland of much smaller
+    // chilies) rather than dominating the whole charm.
+    if (item.imageHeight) img.style.height = `${item.imageHeight}px`;
+    // Most art is cropped tight enough that its own top edge is the
+    // natural hang point. A pose with limbs raised well above the head
+    // (e.g. arms thrown up) isn't — attaching the string at the image's
+    // literal top means it visually ends at the raised hands with a gap
+    // below to the head, instead of the head, with the arms rising above
+    // that point the way they actually would if worn. This shifts the
+    // image up by that amount (a negative margin, so it overflows above
+    // `charm`'s own box rather than being clipped) so the string instead
+    // reads as ending at the true hang point partway down the image.
+    if (item.imageAnchorOffset) img.style.marginTop = `${-item.imageAnchorOffset}px`;
+    // Horizontal counterpart: the fraction of the image's width (0–1)
+    // where its hang point actually sits, for art whose loop/ring isn't
+    // dead-center (e.g. a lantern whose ring is a little right of middle).
+    // A percentage translate is relative to the image's own width, so it
+    // needs no size known up front, and doesn't change layout/hit-box.
+    if (item.imageAnchorX != null) img.style.transform = `translateX(${(0.5 - item.imageAnchorX) * 100}%)`;
     charmInner.appendChild(img);
     window.overlayAPI.resolveAssetPath(item.image).then((url) => {
       img.src = url;
     });
+    // A small fixed decoration below the main charm — e.g. the knot a
+    // lemon-and-chili garland is tied off with — that just rides along
+    // with the charm as a rigid unit rather than swinging independently
+    // on the rope the way `chain` links above the charm do.
+    if (item.belowImage) {
+      const belowImg = document.createElement('img');
+      belowImg.className = 'charm-below-image';
+      belowImg.draggable = false;
+      belowImg.style.height = `${item.belowImage.height}px`;
+      charmInner.appendChild(belowImg);
+      window.overlayAPI.resolveAssetPath(item.belowImage.image).then((url) => {
+        belowImg.src = url;
+      });
+    }
     return;
   }
 
@@ -311,6 +471,7 @@ function teardownCurrent() {
   // showing up on top of whatever item got selected next.
   charm.querySelectorAll('.ritual-flame-wrap, .ritual-shatter-overlay').forEach((el) => el.remove());
   charmBeadsContainer.innerHTML = '';
+  charmChainContainer.innerHTML = '';
   charm.classList.add('hidden');
   pet.classList.add('hidden');
   interactiveEl = null;
@@ -324,6 +485,7 @@ function applyItem(item) {
     charm.classList.remove('hidden');
     renderCharmVisual(item);
     renderBeads(item);
+    renderChain(item);
     startCharmLoop();
     interactiveEl = charm;
     return;

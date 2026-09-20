@@ -54,18 +54,26 @@
         { "kind": "eye", "radius": 9 },
         { "kind": "pearl", "radius": 6 }
       ],
-      "beadGap": 0,
-      "beadClearance": 5,
+      "beadGap": -2,
+      "beadClearance": 16,
       "ritual": { "label": "Give it a flick", "animation": "flick" }
     },
     {
-      "id": "koi-fish",
-      "name": "Koi Fish",
-      "origin": "Japan",
+      "id": "drishti-bommai",
+      "name": "Drishti Bommai",
+      "origin": "South India",
       "category": "Charms",
-      "description": "A koi swimming against the current, kept for perseverance and good fortune.",
+      "description": "A fierce guardian face hung to meet the first bad glance before it reaches you.",
       "type": "charm",
-      "image": "assets/items/koi-fish.svg",
+      "image": "assets/items/drishti-bommai.png",
+      "imageHeight": 130,
+      "beads": [
+        { "kind": "ruby", "radius": 6 },
+        { "kind": "gold", "radius": 9 },
+        { "kind": "ruby", "radius": 6 }
+      ],
+      "beadGap": -2,
+      "beadClearance": 16,
       "ritual": { "label": "Give it a flick", "animation": "flick" }
     },
     {
@@ -89,6 +97,28 @@
       "ritual": { "label": "Give it a flick", "animation": "flick" }
     },
     {
+      "id": "bal-ganesh",
+      "name": "Bal Ganesh",
+      "origin": "Hindu tradition",
+      "category": "Charms",
+      "description": "Ganesh as a child, kept to clear obstacles before something new begins.",
+      "type": "charm",
+      "image": "assets/items/bal-ganesh.png",
+      "imageAnchorOffset": 33,
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "hanuman",
+      "name": "Hanuman",
+      "origin": "Hindu tradition",
+      "category": "Charms",
+      "description": "Carried for strength, courage, and unwavering devotion.",
+      "type": "charm",
+      "image": "assets/items/hanuman.png",
+      "imageAnchorOffset": 33,
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
       "id": "dream-catcher",
       "name": "Dream Catcher",
       "origin": "Native American tradition",
@@ -96,6 +126,97 @@
       "description": "A woven web that catches bad dreams and lets good ones through.",
       "type": "charm",
       "image": "assets/items/dream-catcher.svg",
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "crescent-lantern",
+      "name": "Crescent Lantern",
+      "origin": "Islamic tradition",
+      "category": "Charms",
+      "description": "A lantern beneath a crescent moon, hung to light the way and welcome Ramadan.",
+      "type": "charm",
+      "image": "assets/items/crescent-lantern.png",
+      "imageAnchorX": 0.559,
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "crescent-moon",
+      "name": "Crescent Moon",
+      "origin": "Islamic tradition",
+      "category": "Charms",
+      "description": "A hanging crescent, kept as a sign of faith and new beginnings.",
+      "type": "charm",
+      "image": "assets/items/crescent-moon.png",
+      "imageHeight": 180,
+      "imageAnchorX": 0.486,
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "holy-cross",
+      "name": "Holy Cross",
+      "origin": "Christian tradition",
+      "category": "Charms",
+      "description": "A cross carried as a sign of faith, protection, and peace.",
+      "type": "charm",
+      "image": "assets/items/holy-cross.png",
+      "imageHeight": 180,
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "maneki-neko",
+      "name": "Maneki-neko",
+      "origin": "Japan",
+      "category": "Charms",
+      "description": "A beckoning cat with a raised paw, kept to invite good fortune.",
+      "type": "charm",
+      "image": "assets/items/maneki-neko.png",
+      "imageHeight": 180,
+      "imageAnchorOffset": 18,
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "jack-o-lantern",
+      "name": "Jack-o'-Lantern",
+      "origin": "Halloween",
+      "category": "Charms",
+      "description": "A carved, glowing pumpkin kept to light the way and keep wandering spirits at bay.",
+      "type": "charm",
+      "image": "assets/items/jack-o-lantern.png",
+      "imageHeight": 100,
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "laughing-buddha",
+      "name": "Laughing Buddha",
+      "origin": "China",
+      "category": "Charms",
+      "description": "A joyful figure with arms raised high, kept for good fortune and an easy heart.",
+      "type": "charm",
+      "image": "assets/items/laughing-buddha.png",
+      "imageHeight": 160,
+      "imageAnchorOffset": 31,
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "nimbu-mirchi",
+      "name": "Nimbu Mirchi",
+      "origin": "India",
+      "category": "Charms",
+      "description": "Seven chilies and a lemon strung together at the threshold to turn away misfortune.",
+      "type": "charm",
+      "image": "assets/items/lemon.png",
+      "imageHeight": 72,
+      "belowImage": { "image": "assets/items/wood.png", "height": 12 },
+      "chain": [
+        { "image": "assets/items/chili_1.png", "height": 28, "baseRotation": -5 },
+        { "image": "assets/items/chili_2.png", "height": 15, "baseRotation": 7 },
+        { "image": "assets/items/chili_3.png", "height": 24, "baseRotation": -4 },
+        { "image": "assets/items/chili_4.png", "height": 17, "baseRotation": 8 },
+        { "image": "assets/items/chili_5.png", "height": 35, "baseRotation": -7 },
+        { "image": "assets/items/chili_6.png", "height": 16, "baseRotation": 5 }
+      ],
+      "chainGap": -6,
+      "chainClearance": 2,
       "ritual": { "label": "Give it a flick", "animation": "flick" }
     },
     {
