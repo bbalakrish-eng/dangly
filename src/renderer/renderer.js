@@ -374,7 +374,6 @@ function positionChain() {
 function renderCharmVisual(item) {
   charmInner.innerHTML = '';
   clearTimeout(breakResetTimer);
-  window.__gapDebugLogged = false;
 
   if (item && item.image) {
     const img = document.createElement('img');
