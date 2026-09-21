@@ -1,0 +1,352 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "clover",
+      "name": "Clover",
+      "origin": "Sample item",
+      "category": "Charms",
+      "description": "A four-leaf clover kept for good luck. Give it a flick.",
+      "type": "charm",
+      "glyph": "🍀",
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "star",
+      "name": "Star",
+      "origin": "Sample item",
+      "category": "Charms",
+      "description": "A wishing star for your screen. Give it a flick.",
+      "type": "charm",
+      "glyph": "⭐",
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "heart",
+      "name": "Heart",
+      "origin": "Sample item",
+      "category": "Charms",
+      "description": "A little bit of warmth on your desktop.",
+      "type": "charm",
+      "glyph": "💖",
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "bell",
+      "name": "Bell",
+      "origin": "Sample item",
+      "category": "Charms",
+      "description": "Ring it when you make a wish, or before something that matters.",
+      "type": "charm",
+      "glyph": "🔔",
+      "ritual": { "label": "Ring the bell", "animation": "flick" }
+    },
+    {
+      "id": "evil-eye",
+      "name": "Evil Eye",
+      "origin": "Turkey and the Mediterranean",
+      "category": "Charms",
+      "description": "A glass eye worn against the evil eye. Give it a flick for a little cover.",
+      "type": "charm",
+      "glyph": "🧿",
+      "beads": [
+        { "kind": "pearl", "radius": 6 },
+        { "kind": "eye", "radius": 9 },
+        { "kind": "pearl", "radius": 6 }
+      ],
+      "beadGap": -2,
+      "beadClearance": 16,
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "drishti-bommai",
+      "name": "Drishti Bommai",
+      "origin": "South India",
+      "category": "Charms",
+      "description": "A fierce guardian face hung to meet the first bad glance before it reaches you.",
+      "type": "charm",
+      "image": "assets/items/drishti-bommai.webp",
+      "imageHeight": 130,
+      "beads": [
+        { "kind": "ruby", "radius": 6 },
+        { "kind": "gold", "radius": 9 },
+        { "kind": "ruby", "radius": 6 }
+      ],
+      "beadGap": -2,
+      "beadClearance": 16,
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "dragon",
+      "name": "Dragon",
+      "origin": "East Asia",
+      "category": "Charms",
+      "description": "A coiled dragon medallion for strength and good luck.",
+      "type": "charm",
+      "image": "assets/items/dragon.svg",
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "trishul",
+      "name": "Trishul",
+      "origin": "Hindu tradition",
+      "category": "Charms",
+      "description": "Shiva's three-pronged trident, carried for protection.",
+      "type": "charm",
+      "image": "assets/items/trishul.webp",
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "bal-ganesh",
+      "name": "Bal Ganesh",
+      "origin": "Hindu tradition",
+      "category": "Charms",
+      "description": "Ganesh as a child, kept to clear obstacles before something new begins.",
+      "type": "charm",
+      "image": "assets/items/bal-ganesh.webp",
+      "imageAnchorOffset": 33,
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "hanuman",
+      "name": "Hanuman",
+      "origin": "Hindu tradition",
+      "category": "Charms",
+      "description": "Carried for strength, courage, and unwavering devotion.",
+      "type": "charm",
+      "image": "assets/items/hanuman.webp",
+      "imageAnchorOffset": 33,
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "dream-catcher",
+      "name": "Dream Catcher",
+      "origin": "Native American tradition",
+      "category": "Charms",
+      "description": "A woven web that catches bad dreams and lets good ones through.",
+      "type": "charm",
+      "image": "assets/items/dream-catcher.svg",
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "crescent-lantern",
+      "name": "Crescent Lantern",
+      "origin": "Islamic tradition",
+      "category": "Charms",
+      "description": "A lantern beneath a crescent moon, hung to light the way and welcome Ramadan.",
+      "type": "charm",
+      "image": "assets/items/crescent-lantern.webp",
+      "imageAnchorX": 0.559,
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "crescent-moon",
+      "name": "Crescent Moon",
+      "origin": "Islamic tradition",
+      "category": "Charms",
+      "description": "A hanging crescent, kept as a sign of faith and new beginnings.",
+      "type": "charm",
+      "image": "assets/items/crescent-moon.webp",
+      "imageHeight": 180,
+      "imageAnchorX": 0.486,
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "holy-cross",
+      "name": "Holy Cross",
+      "origin": "Christian tradition",
+      "category": "Charms",
+      "description": "A cross carried as a sign of faith, protection, and peace.",
+      "type": "charm",
+      "image": "assets/items/holy-cross.webp",
+      "imageHeight": 180,
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "maneki-neko",
+      "name": "Maneki-neko",
+      "origin": "Japan",
+      "category": "Charms",
+      "description": "A beckoning cat with a raised paw, kept to invite good fortune.",
+      "type": "charm",
+      "image": "assets/items/maneki-neko.webp",
+      "imageHeight": 180,
+      "imageAnchorOffset": 18,
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "jack-o-lantern",
+      "name": "Jack-o'-Lantern",
+      "origin": "Halloween",
+      "category": "Charms",
+      "description": "A carved, glowing pumpkin kept to light the way and keep wandering spirits at bay.",
+      "type": "charm",
+      "image": "assets/items/jack-o-lantern.webp",
+      "imageHeight": 100,
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "laughing-buddha",
+      "name": "Laughing Buddha",
+      "origin": "China",
+      "category": "Charms",
+      "description": "A joyful figure with arms raised high, kept for good fortune and an easy heart.",
+      "type": "charm",
+      "image": "assets/items/laughing-buddha.webp",
+      "imageHeight": 160,
+      "imageAnchorOffset": 31,
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "nimbu-mirchi",
+      "name": "Nimbu Mirchi",
+      "origin": "India",
+      "category": "Charms",
+      "description": "Seven chilies and a lemon strung together at the threshold to turn away misfortune.",
+      "type": "charm",
+      "image": "assets/items/lemon.webp",
+      "imageHeight": 72,
+      "belowImage": { "image": "assets/items/wood.webp", "height": 12 },
+      "chain": [
+        { "image": "assets/items/chili_1.webp", "height": 28, "baseRotation": -5 },
+        { "image": "assets/items/chili_2.webp", "height": 15, "baseRotation": 7 },
+        { "image": "assets/items/chili_3.webp", "height": 24, "baseRotation": -4 },
+        { "image": "assets/items/chili_4.webp", "height": 17, "baseRotation": 8 },
+        { "image": "assets/items/chili_5.webp", "height": 35, "baseRotation": -7 },
+        { "image": "assets/items/chili_6.webp", "height": 16, "baseRotation": 5 }
+      ],
+      "chainGap": -6,
+      "chainClearance": 2,
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "snowfall",
+      "name": "Snowfall",
+      "origin": "Sample item",
+      "category": "Atmosphere",
+      "description": "Gentle snow drifts down your screen and eases away from your cursor.",
+      "type": "effect",
+      "glyph": "❄️",
+      "effect": { "preset": "snow" }
+    },
+    {
+      "id": "rainfall",
+      "name": "Rainfall",
+      "origin": "Sample item",
+      "category": "Atmosphere",
+      "description": "A steady rain streaks down the screen.",
+      "type": "effect",
+      "glyph": "🌧️",
+      "effect": { "preset": "rain" }
+    },
+    {
+      "id": "autumn-leaves",
+      "name": "Autumn Leaves",
+      "origin": "Sample item",
+      "category": "Atmosphere",
+      "description": "Leaves tumble and sway on their way down, drifting around your cursor.",
+      "type": "effect",
+      "glyph": "🍂",
+      "effect": { "preset": "leaves" }
+    },
+    {
+      "id": "coconut-break",
+      "name": "Coconut Breaking",
+      "origin": "Hindu ritual",
+      "category": "Rituals",
+      "description": "Break the coconut for good fortune before something that matters.",
+      "type": "ritual",
+      "image": "assets/items/coconut-whole.webp",
+      "ritual": {
+        "label": "Break the coconut",
+        "animation": "break",
+        "throwUpDistance": 55,
+        "throwUpDurationMs": 130,
+        "throwDownDistance": 190,
+        "throwDownDurationMs": 280,
+        "throwDrift": -24,
+        "throwRotation": 36,
+        "shatterImage": "assets/items/coconut-shatter.webp",
+        "shatterScale": 2.1,
+        "shatterHoldMs": 650,
+        "resetAfterMs": 2700,
+        "burstColors": ["#6f4c35", "#f7f0e1", "#4d3324", "#c9a876"],
+        "burstShapes": ["shard", "shard", "shard", "strand"],
+        "burstCount": 30,
+        "burstSizeRange": [4, 10],
+        "burstLengthRange": [8, 18],
+        "burstSpeedRange": [260, 480],
+        "burstGravity": 560,
+        "burstDrag": 0.4,
+        "burstLifespanMs": 900,
+        "splash": true,
+        "splashColors": ["#eaf7fb", "#ffffff", "#cdeaf3"],
+        "splashCount": 14,
+        "splashSizeRange": [2, 4.5],
+        "splashSpeedRange": [140, 320],
+        "splashGravity": 750,
+        "splashDrag": 0.3,
+        "splashLifespanMs": 500
+      }
+    },
+    {
+      "id": "lamp-lighting",
+      "name": "Lamp Lighting",
+      "origin": "Hindu ritual",
+      "category": "Rituals",
+      "description": "A lamp kept lit to mark a beginning, or to clear the air before something that matters.",
+      "type": "ritual",
+      "image": "assets/items/lamp.webp",
+      "ritual": {
+        "animation": "ignite",
+        "persistent": true,
+        "flameAnchor": { "xPct": 50, "yPct": 23 },
+        "flameWidth": 42,
+        "flameHeight": 95
+      }
+    },
+    {
+      "id": "ash-gourd-break",
+      "name": "Ash Gourd Breaking",
+      "origin": "South Indian ritual",
+      "category": "Rituals",
+      "description": "Smash the ash gourd to ward off evil eye before a new beginning.",
+      "type": "ritual",
+      "image": "assets/items/ash-gourd-whole.svg",
+      "ritual": {
+        "label": "Break the ash gourd",
+        "animation": "break",
+        "brokenImage": "assets/items/ash-gourd-broken.svg",
+        "resetAfterMs": 2200,
+        "burstColors": ["#cddbc0", "#ffffff", "#8ba378"],
+        "burstShape": "shard",
+        "burstCount": 28,
+        "burstSizeRange": [6, 13],
+        "burstSpeedRange": [140, 320],
+        "burstLifespanMs": 850
+      }
+    },
+    {
+      "id": "kitten",
+      "name": "Kitten",
+      "origin": "Sample item",
+      "category": "Pets",
+      "description": "Wanders along the bottom of your screen with real leg movement. Click it to give it a pat.",
+      "type": "pet",
+      "glyph": "🐈",
+      "pet": { "preset": "cat", "rig": "assets/items/cat-rig.svg", "facesLeft": false, "footOffset": 77 },
+      "ritual": { "label": "Give it a pat", "animation": "bounce" }
+    },
+    {
+      "id": "puppy",
+      "name": "Puppy",
+      "origin": "Sample item",
+      "category": "Pets",
+      "description": "Trots back and forth along your screen. Click it to give it a pat.",
+      "type": "pet",
+      "glyph": "🐕",
+      "pet": { "preset": "dog" },
+      "ritual": { "label": "Give it a pat", "animation": "bounce" }
+    }
+  ]
+}

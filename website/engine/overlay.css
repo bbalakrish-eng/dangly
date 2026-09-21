@@ -1,0 +1,232 @@
+#effects {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.charm {
+  position: absolute;
+  top: 40px;
+  left: 0;
+  font-size: 80px;
+  line-height: 1;
+  cursor: grab;
+  pointer-events: auto;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+  /* The wobble transform below must pivot around where the string
+     actually attaches (the top), not the element's center — otherwise
+     any tilt swings the visible top away from the fixed anchor point,
+     opening a gap between the string's end and the art. */
+  transform-origin: top center;
+}
+
+.charm.hidden {
+  display: none;
+}
+
+.charm-inner {
+  /* The flip's squash (scaleX) and the swing's tilt (rotate) are applied
+     on separate elements — this one and its parent `.charm` — rather
+     than combined into one transform. A non-uniform scale composed with
+     a rotation in a single matrix shears the shape (looks skewed, not
+     tilted) once the rotation angle is more than a few degrees, and the
+     swing tilt alone ranges up to 35°. Nesting keeps each transform in
+     its own local space so they compose cleanly instead of shearing. */
+  transform-origin: top center;
+  /* Stacks the main charm image with an optional `belowImage` decoration
+     (e.g. a garland's tie-off knot) directly beneath it as one rigid
+     unit — most charms only ever have the one image, so this is a no-op
+     for them. */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.charm-below-image {
+  display: block;
+  width: auto;
+  margin-top: -4px;
+  pointer-events: none;
+}
+
+.charm-image {
+  display: block;
+  height: 220px;
+  width: auto;
+  pointer-events: none;
+}
+
+/* Ritual items are free-standing (not hanging from the tall string), and
+   the art tends to be wide/short (a lamp, a gourd) rather than the tall
+   pendant shapes charms use — sharing the 220px charm height would make
+   a wide image comically huge. */
+.charm-image.ritual-image {
+  height: 120px;
+}
+
+.ritual-flame-wrap {
+  position: absolute;
+  /* -88% (not -100%) deliberately lets the bottom ~12% of the flame
+     graphic extend below the anchor point, overlapping the wick instead
+     of sitting flush above it — matching the reference, where the flame
+     base covers the wick's tip with it faintly visible through the
+     mask-faded transparency there (see the SVG mask on the flame path). */
+  transform: translate(-50%, -88%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.ritual-flame-wrap.visible {
+  opacity: 1;
+}
+
+.ritual-flame-glow {
+  position: absolute;
+  left: 50%;
+  bottom: 15%;
+  width: 130px;
+  height: 190px;
+  transform: translate(-50%, 0);
+  background: radial-gradient(
+    ellipse 50% 50% at 50% 65%,
+    rgba(255, 248, 214, 0.55) 0%,
+    rgba(255, 240, 190, 0.28) 35%,
+    rgba(255, 235, 180, 0.1) 60%,
+    rgba(255, 235, 180, 0) 80%
+  );
+  animation: ritual-glow-pulse 0.9s ease-in-out infinite alternate;
+}
+
+.ritual-flame-svg {
+  position: relative;
+  display: block;
+  transform-origin: bottom center;
+  /* Motion is driven per-frame in JS (a sum of non-harmonic sine waves —
+     see performIgniteRitual) rather than a CSS @keyframes loop, since a
+     short deterministic loop visibly repeats itself; no `animation` here. */
+}
+
+@keyframes ritual-glow-pulse {
+  0% { opacity: 0.75; transform: translate(-50%, 0) scale(0.94); }
+  100% { opacity: 1; transform: translate(-50%, 0) scale(1.06); }
+}
+
+.ritual-shatter-overlay {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(0.4);
+  opacity: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.35));
+  transition: transform 0.16s cubic-bezier(0.3, 1.6, 0.5, 1), opacity 0.08s ease;
+  /* The source photo has a piece of shell sliced off right at its own
+     right edge — baked into the pixels, so no amount of scaling the
+     whole image avoids it. Giving the element a narrower aspect ratio
+     than the source and covering+left-aligning crops that edge away
+     instead of showing it. */
+  object-fit: cover;
+  object-position: 0% 45%;
+}
+
+.ritual-shatter-overlay.visible {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+
+.ritual-shatter-overlay.fading {
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+
+.charm-string {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.charm-string.hidden {
+  display: none;
+}
+
+#charmStringLine {
+  fill: none;
+  stroke: #a8783f;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.charm-beads {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.charm-bead {
+  position: absolute;
+  line-height: 0;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+.charm-chain {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.charm-chain-element {
+  position: absolute;
+  display: block;
+  width: auto;
+  transform-origin: center center;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.pet {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 48px;
+  line-height: 1;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.pet.hidden {
+  display: none;
+}
+
+.pet-glyph {
+  display: inline-block;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.35));
+}
+
+.pet-glyph.bounce {
+  animation: bounce 0.4s ease;
+}
+
+@keyframes bounce {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.3, 0.7); }
+  60% { transform: scale(0.9, 1.15); }
+  100% { transform: scale(1); }
+}
+
+.charm:active {
+  cursor: grabbing;
+}
