@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Give it a flick</title>
+  <link rel="stylesheet" href="engine/overlay.css" />
+  <link rel="stylesheet" href="mini-demo.css" />
+</head>
+<body>
+  <div class="stage">
+    <div class="menubar" aria-hidden="true">
+      <div class="mb-left"><b>DANGLY</b><span>File</span><span>Edit</span><span>View</span></div>
+      <div class="mb-right" id="clock"></div>
+    </div>
+
+    <!-- The live preview: the same engine the app and the hero demo run, confined to this stage.
+         This page only ever selects charms, but renderer.js unconditionally expects the weather
+         canvas and pet elements to exist (it just never touches them here) — kept as hidden,
+         unused elements rather than forking the shared engine script for this one page. -->
+    <div class="overlay" id="overlay" aria-hidden="true">
+      <canvas id="effects" class="hidden"></canvas>
+      <svg id="charmString" class="charm-string hidden">
+        <polyline id="charmStringLine" points="" />
+      </svg>
+      <div id="charmBeads" class="charm-beads"></div>
+      <div id="charmChain" class="charm-chain"></div>
+      <div id="charm" class="charm hidden"><div id="charmInner" class="charm-inner"></div></div>
+      <div id="pet" class="pet hidden"><span class="pet-glyph"></span></div>
+    </div>
+
+    <div class="hint"><i class="ic" style="--i: url(icons/hand-pointing.svg)"></i>Drag it, or give it a flick</div>
+  </div>
+
+  <div class="controls">
+    <div class="picker" id="picker" role="tablist" aria-label="Charm"></div>
+    <div class="tools">
+      <div class="tool">
+        <span class="tool-label">String</span>
+        <div class="swatches" id="swatches"></div>
+      </div>
+      <label class="tool">
+        <span class="tool-label">Size <b id="sizeValue">55%</b></span>
+        <input type="range" id="sizeSlider" min="35" max="85" step="1" value="55" />
+      </label>
+    </div>
+  </div>
+
+  <script src="bridge-mini.js"></script>
+  <script src="engine/host.js"></script>
+  <script src="engine/charm-physics.js"></script>
+  <script src="engine/renderer.js"></script>
+  <script src="mini-demo.js"></script>
+</body>
+</html>

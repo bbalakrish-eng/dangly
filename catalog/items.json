@@ -297,12 +297,13 @@
       "description": "A lamp kept lit to mark a beginning, or to clear the air before something that matters.",
       "type": "ritual",
       "image": "assets/items/lamp.webp",
+      "imageHeight": 103,
       "ritual": {
         "animation": "ignite",
         "persistent": true,
         "flameAnchor": { "xPct": 50, "yPct": 23 },
-        "flameWidth": 42,
-        "flameHeight": 95
+        "flameWidth": 36,
+        "flameHeight": 82
       }
     },
     {

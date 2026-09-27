@@ -6,8 +6,10 @@
   font-display: swap;
 }
 
-/* Light page, one dark-or-vivid stage, one lime accent, one radius family.
-   The stage look is a theme: data-theme="wallpaper" (default) | "green" | "orange" on <body>, or ?theme= in the URL. */
+/* Light-or-dark page, one dark-or-vivid stage, one lime accent, one radius family.
+   Two independent axes: --mode (light/dark, the whole page — data-mode on <html>, defaults to
+   the OS setting, overridable) and the stage's own look (data-theme="wallpaper" default | "green"
+   | "orange" on <body>, or ?theme= in the URL). */
 :root {
   --bg: #f3f4f4;
   --card: #e6e8e8;
@@ -21,6 +23,34 @@
   --notch: 26px;
   --tile: 20px;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  /* A handful of small elements (the "Get the app" pill, the vertical name tag, the tray card's
+     name label) are always a bright chip with dark text/icons, in both page modes — that's a
+     deliberate constant, not "page text", so it reads from this fixed color rather than --ink,
+     which flips in dark mode. */
+  --chip-ink: #111314;
+}
+
+:root[data-mode='dark'] {
+  --bg: #121314;
+  --card: #1d1f20;
+  --card-on: #282a2b;
+  --ink: #f2f3f1;
+  --ink2: #a2a8a6;
+  --ink3: #717674;
+  --line: rgba(255, 255, 255, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  /* Only when the visitor hasn't chosen explicitly — see the toggle in site.js. */
+  :root:not([data-mode='light']):not([data-mode='dark']) {
+    --bg: #121314;
+    --card: #1d1f20;
+    --card-on: #282a2b;
+    --ink: #f2f3f1;
+    --ink2: #a2a8a6;
+    --ink3: #717674;
+    --line: rgba(255, 255, 255, 0.1);
+  }
 }
 
 body[data-theme='green'] {
@@ -119,6 +149,9 @@ a:focus-visible, button:focus-visible {
 /* Same typeface as the headline, bold, with the headline's tight tracking. */
 .brand-name { font-size: 18px; font-weight: 700; letter-spacing: -0.03em; }
 
+/* Always a white pill, in both page modes — the same "bright chip" language as .get/.vert/.chip
+   below, so its own text/selected colors are fixed (--chip-ink), not the page's var(--ink), which
+   would turn near-white in dark mode and vanish against this pill's always-white surface. */
 .pillnav {
   display: inline-flex;
   padding: 5px;
@@ -131,10 +164,32 @@ a:focus-visible, button:focus-visible {
   border-radius: 999px;
   font-size: 13.5px;
   font-weight: 500;
+  color: #5d6366;
   transition: background-color 0.25s var(--ease), color 0.25s var(--ease);
 }
-.pillnav button:hover { background: rgba(17, 19, 20, 0.05); }
-.pillnav button[aria-current='true'] { background: var(--ink); color: #fff; }
+.pillnav button:hover { background: rgba(17, 19, 20, 0.05); color: var(--chip-ink); }
+.pillnav button[aria-current='true'] { background: var(--chip-ink); color: #fff; }
+
+/* Light/dark toggle — same fixed white-chip surface as the pill nav beside it. Both icons are
+   always in the DOM; only one is shown, decided by data-mode-resolved (see site.js), which is set
+   before first paint so there's no flash of the wrong icon. */
+.mode-toggle {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #5d6366;
+  font-size: 17px;
+}
+.mode-toggle:hover { color: var(--chip-ink); }
+.mode-toggle .ic-moon { display: none; }
+:root[data-mode-resolved='dark'] .mode-toggle .ic-sun { display: none; }
+:root[data-mode-resolved='dark'] .mode-toggle .ic-moon { display: block; }
 
 h1 {
   margin: clamp(32px, 9vh, 84px) 0 0;
@@ -251,6 +306,9 @@ h1 {
   padding: 11px 15px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.96);
+  /* Fixed, not inherited from var(--ink): always-white surface on the stage image, so its text
+     needs to stay dark in both page modes rather than following the page's own ink color. */
+  color: var(--chip-ink);
   font-size: 12.5px;
   font-weight: 500;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
@@ -272,6 +330,7 @@ h1 {
   padding: 16px 8px 8px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.96);
+  color: var(--chip-ink); /* see the comment on .chip above */
   text-decoration: none;
   transition: transform 0.2s var(--ease);
 }
@@ -289,7 +348,9 @@ h1 {
 }
 .vert i, .get i {
   border-radius: 50%;
-  background: var(--ink);
+  /* Fixed, not var(--ink): .vert and the default .get are always a white pill (they sit on the
+     stage image, not the page), so their icon circle needs to stay dark regardless of page mode. */
+  background: var(--chip-ink);
   color: #fff;
   display: flex;
   align-items: center;
@@ -322,7 +383,7 @@ h1 {
 }
 .tags button:hover { background: rgba(255, 255, 255, 0.3); }
 .tags button:active { transform: scale(0.97); }
-.tags button[aria-pressed='true'] { background: #fff; color: var(--ink); border-color: #fff; }
+.tags button[aria-pressed='true'] { background: #fff; color: var(--chip-ink); border-color: #fff; }
 .tags button:focus-visible { outline-color: #fff; }
 
 /* Wallpaper theme */
@@ -385,15 +446,15 @@ body[data-theme='wallpaper'] .menubar {
   font-size: 14px;
   font-weight: 600;
   text-decoration: none;
-  color: var(--ink);
+  color: var(--chip-ink); /* see the comment on .chip above */
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
   transition: transform 0.15s var(--ease), box-shadow 0.2s ease;
 }
 .get:hover { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12); }
 .get:active { transform: scale(0.98); }
 .get i { width: 34px; height: 34px; font-size: 16px; }
-.get-dark { background: var(--ink); color: #fff; }
-.get-dark i { background: #fff; color: var(--ink); }
+.get-dark { background: var(--chip-ink); color: #fff; }
+.get-dark i { background: #fff; color: var(--chip-ink); }
 
 .n-bl {
   left: 0;
@@ -437,6 +498,7 @@ body[data-theme='wallpaper'] .menubar {
   padding: 0 8px;
   border-radius: 999px;
   background: #fff;
+  color: var(--chip-ink); /* see the comment on .chip above */
   font-style: normal;
   font-size: 12.5px;
   font-weight: 500;
@@ -524,6 +586,96 @@ body[data-theme='wallpaper'] .menubar {
 .reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.8s var(--ease), transform 0.8s var(--ease); }
 .reveal.in { opacity: 1; transform: none; }
 
+/* ───────── Benefits strip ───────── */
+.why { max-width: 1520px; margin: 0 auto; padding: 22px 32px 0; }
+.why-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 30px 6px;
+  border-radius: var(--r);
+  /* Follows the page like every other content surface (.card, the FAQ's .q) — a hardcoded white
+     here would go near-white-text-on-white in dark mode, since its own h3/p read from var(--ink). */
+  background: var(--card);
+}
+.why-item { padding: 2px 30px; border-left: 1px solid var(--line); }
+.why-item:first-child { border-left: 0; }
+.why-item .ic {
+  width: 44px;
+  height: 44px;
+  padding: 11px;
+  border-radius: 50%;
+  /* A step up from .why-grid's own now-var(--card) background, so the icon tile still reads as
+     a distinct circle instead of blending into the panel. */
+  background: var(--card-on);
+  color: var(--ink);
+  -webkit-mask: none;
+  mask: none;
+  position: relative;
+}
+/* the icon glyph sits inside the tile: mask lives on a pseudo-element so the tile keeps its fill */
+.why-item .ic::before {
+  content: '';
+  position: absolute;
+  inset: 11px;
+  background: currentColor;
+  -webkit-mask: var(--i) center / contain no-repeat;
+  mask: var(--i) center / contain no-repeat;
+}
+.why-item h3 { margin: 18px 0 6px; font-size: 16px; font-weight: 600; letter-spacing: -0.015em; }
+.why-item p { margin: 0; max-width: 30ch; font-size: 14px; line-height: 1.55; color: var(--ink2); }
+
+/* ───────── FAQ ───────── */
+.faq { max-width: 1520px; margin: 0 auto; padding: 96px 32px 0; }
+.faq .sec { margin-bottom: 96px; }
+/* Two independent columns: an open answer only pushes down its own column. */
+.faq-grid { columns: 2; column-gap: 12px; }
+.q { margin-bottom: 12px; break-inside: avoid; border-radius: var(--tile); background: var(--card); transition: background-color 0.25s ease, box-shadow 0.25s ease; }
+.q:hover { background: var(--card-on); }
+/* var(--card-on), not a hardcoded white — same bug as .why-grid above: the open answer's text
+   reads from var(--ink)/var(--ink2), which is near-white in dark mode. */
+.q[open] { background: var(--card-on); box-shadow: 0 0 0 1px var(--line); }
+.q summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px 22px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  cursor: pointer;
+  list-style: none;
+}
+.q summary::-webkit-details-marker { display: none; }
+.q summary .ic { flex: none; font-size: 20px; transition: transform 0.35s var(--ease); }
+.q[open] summary .ic { transform: rotate(45deg); }
+.q p { margin: 0; padding: 0 22px 22px; max-width: 58ch; font-size: 15px; line-height: 1.6; color: var(--ink2); animation: fade 0.35s ease both; }
+
+/* ───────── Replay (the second live demo) ───────── */
+/* Centered, unlike every other section header on the page — a deliberate one-off for the single
+   "come play again" moment near the end, not a pattern reused elsewhere. */
+.replay { max-width: 900px; margin: 0 auto; padding: 8px 32px 0; text-align: center; }
+.replay h2 { margin: 0; font-size: clamp(2.1rem, 4.6vw, 3.4rem); font-weight: 600; line-height: 1.05; letter-spacing: -0.03em; }
+.replay h2 span { display: block; color: var(--ink3); }
+.replay > p { margin: 14px auto 0; max-width: 38ch; font-size: 15px; color: var(--ink2); }
+
+.replay-frame {
+  margin: 32px auto 0;
+  border-radius: var(--r);
+  overflow: hidden;
+  background: #101211;
+  box-shadow: 0 30px 70px rgba(17, 19, 20, 0.16);
+}
+.replay-frame iframe { display: block; width: 100%; height: 560px; border: 0; }
+
+@media (max-width: 900px) {
+  .replay-frame iframe { height: 480px; }
+}
+@media (max-width: 560px) {
+  .replay { padding-inline: 16px; }
+  .replay-frame iframe { height: 420px; }
+}
+
 /* ───────── Footer ───────── */
 .foot {
   display: flex;
@@ -540,8 +692,37 @@ body[data-theme='wallpaper'] .menubar {
 @media (min-width: 1584px) { .foot { margin-left: auto; margin-right: auto; } }
 .foot h2 { margin: 0; font-size: clamp(1.8rem, 3vw, 2.8rem); font-weight: 600; letter-spacing: -0.04em; line-height: 1.05; }
 .foot p { margin: 10px 0 0; color: rgba(255, 255, 255, 0.78); font-size: 16px; }
-.foot .get-dark { background: #fff; color: var(--ink); flex: none; }
-.foot .get-dark i { background: var(--ink); color: #fff; }
+.foot .get-dark { background: #fff; color: var(--chip-ink); flex: none; }
+.foot .get-dark i { background: var(--chip-ink); color: #fff; }
+
+/* A quiet closing bar under the dark CTA band — follows the page's own light/dark mode (unlike
+   the CTA band above it, which is always dark), since it's ordinary page chrome, not a moment. */
+.site-foot {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px 28px;
+  max-width: 1520px;
+  margin: 0 auto;
+  padding: 26px 32px 40px;
+  border-top: 1px solid var(--line);
+}
+.sf-brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; flex: none; }
+.sf-brand .brand-mark { width: 26px; height: 26px; border-radius: 8px; }
+.sf-brand .brand-name { font-size: 14px; font-weight: 700; letter-spacing: -0.02em; }
+.sf-tagline { margin: 0; font-size: 13px; color: var(--ink3); }
+.sf-links { display: flex; gap: 20px; font-size: 13px; }
+.sf-links a { color: var(--ink2); text-decoration: none; }
+.sf-links a:hover { color: var(--ink); }
+.sf-meta { display: flex; align-items: center; gap: 20px; margin-left: auto; font-size: 13px; color: var(--ink3); }
+.sf-meta a { color: var(--ink3); text-decoration: none; }
+.sf-meta a:hover { color: var(--ink); }
+
+@media (max-width: 700px) {
+  .site-foot { padding-inline: 16px; }
+  .sf-meta { margin-left: 0; }
+  .sf-tagline { flex-basis: 100%; order: 3; }
+}
 
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 
@@ -549,7 +730,8 @@ body[data-theme='wallpaper'] .menubar {
   html { scroll-behavior: auto; }
   .reveal { opacity: 1; transform: none; transition: none; }
   .chip { animation: none; }
-  .card, .tray-card, .vert, .get { transition: none; }
+  .card, .tray-card, .vert, .get, .q, .q summary .ic { transition: none; }
+  .q p { animation: none; }
 }
 
 @media (max-width: 1100px) {
@@ -565,6 +747,9 @@ body[data-theme='wallpaper'] .menubar {
   .copy { margin-top: 24px; }
   .right { height: 620px; }
   .grid.charms, .grid.wide, .grid.mood { grid-template-columns: repeat(2, 1fr); }
+  .why-grid { grid-template-columns: repeat(2, 1fr); row-gap: 26px; }
+  .why-item:nth-child(3) { border-left: 0; }
+  .faq-grid { columns: 1; }
   .card.side { grid-template-columns: 1fr; height: auto; }
   .card.side .art { height: 200px; }
   .card.side .txt { padding: 4px 22px 22px; }
@@ -572,5 +757,7 @@ body[data-theme='wallpaper'] .menubar {
 }
 @media (max-width: 560px) {
   .grid.charms, .grid.wide, .grid.mood { grid-template-columns: 1fr; }
-  .all { padding-inline: 16px; }
+  .why-grid { grid-template-columns: 1fr; }
+  .why-item { border-left: 0; }
+  .all, .why, .faq { padding-inline: 16px; }
 }

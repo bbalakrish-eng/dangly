@@ -7,9 +7,27 @@
   <meta name="description" content="Lucky charms, rituals and weather from traditions around the world, living on your screen. Try any of them in your browser." />
   <link rel="preload" href="fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="engine/overlay.css" />
-  <link rel="stylesheet" href="site.css" />
+  <!-- ?v= is a manual cache-buster: bump it (any change works, e.g. the date) whenever site.css
+       changes, so a browser — or host — that cached the old file has to fetch the new one. -->
+  <link rel="stylesheet" href="site.css?v=4" />
+  <script>
+    // Runs before first paint (inline, in <head>) so the page never flashes the wrong mode —
+    // by the time site.css's [data-mode]/[data-mode-resolved] rules apply, this has already run.
+    // A saved explicit choice sets data-mode too, so it overrides the OS setting from then on;
+    // with no saved choice, only data-mode-resolved is set and the page follows the OS live.
+    (() => {
+      let saved = null;
+      try {
+        saved = localStorage.getItem('mode');
+      } catch {}
+      const resolved = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      const root = document.documentElement;
+      root.dataset.modeResolved = resolved;
+      if (saved) root.dataset.mode = saved;
+    })();
+  </script>
 </head>
-<body data-theme="wallpaper">
+<body id="top" data-theme="wallpaper">
   <header class="hero">
     <div class="frame">
       <section class="left">
@@ -21,6 +39,10 @@
             <span class="brand-name">DANGLY</span>
           </a>
           <nav class="pillnav" id="pillnav" aria-label="Categories"></nav>
+          <button type="button" class="mode-toggle" id="modeToggle" aria-label="Switch to dark mode">
+            <i class="ic ic-sun" style="--i: url(icons/sun.svg)"></i>
+            <i class="ic ic-moon" style="--i: url(icons/moon.svg)"></i>
+          </button>
         </div>
 
         <h1>Lucky charms<br />for your<span class="faces" id="faces" aria-hidden="true"></span><br />desktop.</h1>
@@ -82,7 +104,82 @@
     </div>
   </header>
 
+  <section class="why reveal" id="why" aria-label="Why it feels right">
+    <div class="why-grid">
+      <div class="why-item">
+        <i class="ic" style="--i: url(icons/cursor-click.svg)"></i>
+        <h3>Clicks go straight through</h3>
+        <p>Only the charm takes the mouse. Everything else on your screen works as it always does.</p>
+      </div>
+      <div class="why-item">
+        <i class="ic" style="--i: url(icons/hand-grabbing.svg)"></i>
+        <h3>Real movement</h3>
+        <p>Charms hang on a rope. Drag or flick one and it swings, tilts and slowly settles.</p>
+      </div>
+      <div class="why-item">
+        <i class="ic" style="--i: url(icons/sparkle.svg)"></i>
+        <h3>More than charms</h3>
+        <p>Rituals to perform, weather that falls across your screen, and small pets to keep you company.</p>
+      </div>
+      <div class="why-item">
+        <i class="ic" style="--i: url(icons/keyboard.svg)"></i>
+        <h3>Always in reach</h3>
+        <p>Show, hide or switch from the menu bar or tray, or press Control+Shift+D.</p>
+      </div>
+    </div>
+  </section>
+
   <main class="all" id="all"></main>
+
+  <section class="replay reveal" id="replay" aria-label="Try it once more">
+    <h2>Go on.<br /><span>Give it a flick.</span></h2>
+    <p>Still just a charm on a string. Still oddly satisfying.</p>
+    <div class="replay-frame">
+      <iframe
+        id="replayFrame"
+        title="A small live demo of a charm hanging on your desktop"
+        loading="lazy"
+        data-src="mini-demo.html"
+      ></iframe>
+    </div>
+  </section>
+
+  <section class="faq" id="faq">
+    <div class="sec reveal">
+      <h2>Questions</h2>
+      <p>Straight answers about how it behaves on your screen.</p>
+      <div class="faq-grid">
+      <details class="q">
+        <summary>Will it get in the way of my clicks?<i class="ic" style="--i: url(icons/plus.svg)"></i></summary>
+        <p>No. Everything outside the charm is click-through, so you can keep working as normal. Only the charm itself picks up the mouse, so you can drag or flick it.</p>
+      </details>
+      <details class="q">
+        <summary>Does it slow my computer down?<i class="ic" style="--i: url(icons/plus.svg)"></i></summary>
+        <p>It draws and animates the charm all the time, so it uses some processor and battery. We haven't published figures, and the amount depends on your computer and what else is running. You can hide it whenever you like.</p>
+      </details>
+      <details class="q">
+        <summary>How do I hide it?<i class="ic" style="--i: url(icons/plus.svg)"></i></summary>
+        <p>Use the menu bar or system tray icon to show, hide or switch charms. Control+Shift+D hides and shows it from anywhere.</p>
+      </details>
+      <details class="q">
+        <summary>Can I try it first?<i class="ic" style="--i: url(icons/plus.svg)"></i></summary>
+        <p>Yes. Every charm, ritual, weather effect and pet on this page runs live in your browser, on the same engine the app uses.</p>
+      </details>
+      <details class="q">
+        <summary>What are rituals?<i class="ic" style="--i: url(icons/plus.svg)"></i></summary>
+        <p>Small interactions with a tradition behind them. Break a coconut, light a lamp: click, and it plays out on your screen.</p>
+      </details>
+      <details class="q">
+        <summary>Will I be luckier?<i class="ic" style="--i: url(icons/plus.svg)"></i></summary>
+        <p>We can't promise that. The charms come from real traditions, and they're meant as a small, personal decoration for your screen.</p>
+      </details>
+      <details class="q">
+        <summary>Where are my settings kept?<i class="ic" style="--i: url(icons/plus.svg)"></i></summary>
+        <p>Your choice of charm is stored on your own computer.</p>
+      </details>
+      </div>
+    </div>
+  </section>
 
   <footer class="foot" id="get">
     <div>
@@ -92,6 +189,23 @@
     <a class="get get-dark" href="#get"><i><b class="ic" style="--i: url(icons/arrow-up-right.svg)"></b></i>Get the app</a>
   </footer>
 
+  <div class="site-foot">
+    <a class="sf-brand" href="#top">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-name">DANGLY</span>
+    </a>
+    <p class="sf-tagline">Traditions from around the world, hanging on your screen.</p>
+    <nav class="sf-links" aria-label="Page sections">
+      <a href="#sec-charms">Charms</a>
+      <a href="#sec-rituals">Rituals</a>
+      <a href="#faq">Questions</a>
+    </nav>
+    <div class="sf-meta">
+      <span>© 2026 DANGLY</span>
+      <a href="#top">Back to top ↑</a>
+    </div>
+  </div>
+
   <script src="bridge.js"></script>
   <script src="engine/host.js"></script>
   <script src="engine/effect-presets.js"></script>
@@ -100,6 +214,7 @@
   <script src="engine/pet-engine.js"></script>
   <script src="engine/charm-physics.js"></script>
   <script src="engine/renderer.js"></script>
-  <script src="site.js"></script>
+  <!-- Same cache-buster as site.css above; bump together whenever either file changes. -->
+  <script src="site.js?v=4"></script>
 </body>
 </html>

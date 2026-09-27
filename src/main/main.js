@@ -40,6 +40,20 @@ function setActiveItem(item) {
   sendActiveItem(overlayWindow, item);
 }
 
+function getAppearanceOverride(itemId) {
+  return settings.appearanceOverrides[itemId] || {};
+}
+
+// Pushed to the overlay whenever the Appearance tab changes something —
+// the overlay applies it live (see the 'appearance:changed' handler in
+// renderer.js) rather than reloading the whole charm, so a slider drag
+// reads as the rope easing to its new length, not a flicker/rebuild.
+function notifyAppearanceChanged(itemId) {
+  if (overlayWindow && !overlayWindow.isDestroyed()) {
+    overlayWindow.webContents.send('appearance:changed', itemId, getAppearanceOverride(itemId));
+  }
+}
+
 function openGallery() {
   if (galleryWindow && !galleryWindow.isDestroyed()) {
     galleryWindow.focus();
@@ -168,6 +182,18 @@ ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
 ipcMain.handle('catalog:get', () => catalog);
 ipcMain.handle('catalog:get-active', () => resolveActiveItem());
 ipcMain.on('item:select', (_event, item) => setActiveItem(item));
+
+ipcMain.handle('appearance:get', (_event, itemId) => getAppearanceOverride(itemId));
+ipcMain.on('appearance:set', (_event, itemId, overrides) => {
+  settings.appearanceOverrides[itemId] = { ...getAppearanceOverride(itemId), ...overrides };
+  saveSettings(settings);
+  notifyAppearanceChanged(itemId);
+});
+ipcMain.on('appearance:reset', (_event, itemId) => {
+  delete settings.appearanceOverrides[itemId];
+  saveSettings(settings);
+  notifyAppearanceChanged(itemId);
+});
 
 ipcMain.handle('display:get-info', () => {
   const display = screen.getPrimaryDisplay();

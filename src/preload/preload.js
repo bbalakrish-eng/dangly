@@ -11,4 +11,8 @@ contextBridge.exposeInMainWorld('overlayAPI', {
   onSystemResume: (callback) => {
     ipcRenderer.on('system:resume', () => callback());
   },
+  getAppearance: (itemId) => ipcRenderer.invoke('appearance:get', itemId),
+  onAppearanceChanged: (callback) => {
+    ipcRenderer.on('appearance:changed', (_event, itemId, overrides) => callback(itemId, overrides));
+  },
 });

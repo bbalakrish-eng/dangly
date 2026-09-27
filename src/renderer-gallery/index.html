@@ -2,24 +2,108 @@
 <html>
 <head>
   <meta charset="UTF-8" />
-  <title>Choose a Charm</title>
+  <title>Desktop Charms</title>
   <link rel="stylesheet" href="gallery.css" />
+  <script>
+    // Runs before first paint so the window never flashes the wrong mode — a saved explicit
+    // choice wins; otherwise it follows the OS setting (see gallery.js for the toggle itself).
+    (() => {
+      let saved = null;
+      try {
+        saved = localStorage.getItem('mode');
+      } catch {}
+      const resolved = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.dataset.modeResolved = resolved;
+      if (saved) document.documentElement.dataset.mode = saved;
+    })();
+  </script>
 </head>
 <body>
-  <header>
-    <h1>Choose your charm</h1>
-    <p>Pick one to hang on your screen. New items arrive with updates.</p>
-  </header>
+  <div class="win">
+    <nav class="rail" aria-label="Settings">
+      <span class="rail-mark" aria-hidden="true"></span>
+      <button type="button" class="tab" id="tabBtnLibrary" role="tab" aria-selected="true" title="Library">
+        <i class="ic" style="--i: url(icons/squares-four.svg)"></i>
+      </button>
+      <button type="button" class="tab" id="tabBtnAppearance" role="tab" aria-selected="false" title="Appearance">
+        <i class="ic" style="--i: url(icons/sliders-horizontal.svg)"></i>
+      </button>
+      <button type="button" class="mode-toggle" id="modeToggle" title="Switch appearance">
+        <i class="ic ic-sun" style="--i: url(icons/sun.svg)"></i>
+        <i class="ic ic-moon" style="--i: url(icons/moon.svg)"></i>
+      </button>
+    </nav>
 
-  <div id="categories"></div>
+    <div class="main">
+      <section id="panelLibrary" class="panel">
+        <header>
+          <h1>Choose your charm</h1>
+          <p>Pick one to hang on your screen. New items arrive with updates.</p>
+        </header>
 
-  <footer>
-    <h2>Or use your own emoji</h2>
-    <div class="custom-row">
-      <input id="customEmoji" type="text" maxlength="4" placeholder="🍀" />
-      <button id="useCustom">Use this emoji</button>
+        <div id="categories"></div>
+
+        <footer>
+          <h2>Or use your own emoji</h2>
+          <div class="custom-row">
+            <input id="customEmoji" type="text" maxlength="4" placeholder="🍀" />
+            <button id="useCustom">Use this emoji</button>
+          </div>
+        </footer>
+      </section>
+
+      <section id="panelAppearance" class="panel hidden">
+        <header>
+          <h1>Appearance</h1>
+          <p id="appearanceSubject">Adjusting <strong id="appearanceItemName">—</strong></p>
+        </header>
+
+        <div id="appearanceEmpty" class="appearance-empty hidden">
+          <p>These settings are for charms hanging on a string. Choose one from the Library tab first.</p>
+        </div>
+
+        <div id="appearanceControls" class="appearance-controls hidden">
+          <div class="field">
+            <div class="field-label">
+              <span>Position</span>
+              <span class="hint">Drag it anywhere along the top of your screen.</span>
+            </div>
+            <div id="positionStrip" class="position-strip">
+              <div class="position-strip-string" id="positionString"></div>
+              <img class="position-strip-puck" id="positionPuck" alt="" draggable="false" />
+              <span class="position-strip-glyph hidden" id="positionPuckGlyph"></span>
+            </div>
+          </div>
+
+          <label class="field slider-field">
+            <div class="field-label">
+              <span>Charm size</span>
+              <span class="value" id="sizeValue">100%</span>
+            </div>
+            <input type="range" id="sizeSlider" min="60" max="150" step="1" value="100" />
+          </label>
+
+          <label class="field slider-field">
+            <div class="field-label">
+              <span>Rope length</span>
+              <span class="value" id="ropeValue">100%</span>
+            </div>
+            <input type="range" id="ropeSlider" min="50" max="200" step="1" value="100" />
+          </label>
+
+          <label class="field slider-field">
+            <div class="field-label">
+              <span>Opacity</span>
+              <span class="value" id="opacityValue">100%</span>
+            </div>
+            <input type="range" id="opacitySlider" min="30" max="100" step="1" value="100" />
+          </label>
+
+          <button type="button" id="resetAppearance" class="reset-button">Reset to default</button>
+        </div>
+      </section>
     </div>
-  </footer>
+  </div>
 
   <script src="gallery.js"></script>
 </body>

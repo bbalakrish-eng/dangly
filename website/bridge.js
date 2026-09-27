@@ -54,6 +54,10 @@
       return displayInfo();
     },
     resolveAssetPath: async (relativePath) => relativePath,
+    // The website demo has no Appearance settings panel (that's the desktop app's settings
+    // window) — every charm just renders at the catalog's own defaults.
+    getAppearance: async () => ({}),
+    onAppearanceChanged: () => {},
   };
 
   window.demoBridge = {

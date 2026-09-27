@@ -97,6 +97,23 @@ function createCharmPhysics({ segments = 12, segmentLength = 15.5, initialAnchor
     charmAboveHeight = aboveHeight;
   }
 
+  // Live "Rope Length" adjustment (see the Appearance settings panel): just
+  // updates the rest length the constraint solver already reads every step
+  // (see stepOnce below), so the rope eases to the new length over the next
+  // few frames instead of needing to be rebuilt from scratch.
+  function setSegmentLength(length) {
+    segmentLength = length;
+  }
+
+  // Live "Position" adjustment: points[0] is pinned to anchorX every
+  // constraint iteration (see stepOnce), so moving it here just gives the
+  // rest of the rope a new fixed end to settle toward — the same thing that
+  // already happens when a drag eases the anchor sideways near the top of
+  // the screen.
+  function setAnchorX(x) {
+    anchorX = x;
+  }
+
   // A subtle "flinch" when the cursor passes near the charm without
   // dragging it — nudges the bob's current position without touching its
   // previous position, which Verlet integration reads as an implicit
@@ -208,6 +225,20 @@ function createCharmPhysics({ segments = 12, segmentLength = 15.5, initialAnchor
         }
       }
     }
+
+    // A hard ceiling at the anchor's own height: nothing the rope hangs from
+    // should ever be able to swing, drag, or fling *above* the point it's
+    // tied to — a real string tied off at the top can't lift its own knot.
+    // Without this, a fast upward drag-release (or, less often, the hover
+    // flinch) could carry the bob's implicit Verlet velocity well past
+    // anchorY before gravity caught up, reading as the charm flying off
+    // above the top of the screen for a moment. Only touching position
+    // (never px/py) means Verlet reads the stop as a fully inelastic
+    // collision — the point loses its upward momentum instead of bouncing
+    // back down off an invisible floor.
+    for (let i = 1; i < n; i++) {
+      if (points[i].y < anchorY) points[i].y = anchorY;
+    }
   }
 
   function update(dtSeconds) {
@@ -246,6 +277,8 @@ function createCharmPhysics({ segments = 12, segmentLength = 15.5, initialAnchor
     flick,
     updateCursor,
     setSize,
+    setSegmentLength,
+    setAnchorX,
     update,
     render,
     getPoints,

@@ -19,6 +19,12 @@ let breakResetTimer = null;
 let breakThrowRAF = null;
 let ritualRestPosition = null; // { left, top } captured just before a break's throw starts
 let flameAnimationHandle = null;
+// The current item's user tweaks from the Appearance settings panel
+// (size/rope-length/opacity/hang position) — {} means "catalog defaults".
+// Re-fetched whenever the item changes (see applyItem), and patched live
+// while the settings window is open (see the 'appearance:changed' listener
+// near the bottom of this file) without tearing down/rebuilding the charm.
+let appearance = {};
 
 function computeGroundY() {
   if (!displayInfo) return window.overlayHost.size().height - 60;
@@ -80,10 +86,15 @@ function startCharmLoop() {
   // itself just resized the window to, not whatever the DOM has caught
   // up to yet.
   const referenceWidth = displayInfo?.bounds?.width ?? window.overlayHost.size().width;
+  // A user-set hang position (the Appearance panel's position strip, stored
+  // as a 0–1 fraction of screen width so it still lands in the right place
+  // after a display change) takes priority over the host's own default.
   // `charmAnchorX` is an optional override from the host (the website demo
   // hangs the charm inside its own layout); the app never sets it.
-  const initialAnchorX = displayInfo?.charmAnchorX ?? referenceWidth - 200;
-  charmPhysics = window.createCharmPhysics({ initialAnchorX, anchorY: 0 });
+  const initialAnchorX =
+    appearance.anchorXPct != null ? referenceWidth * appearance.anchorXPct : displayInfo?.charmAnchorX ?? referenceWidth - 200;
+  const segmentLength = 15.5 * (appearance.ropeLengthScale ?? 1);
+  charmPhysics = window.createCharmPhysics({ initialAnchorX, anchorY: 0, segmentLength });
   charmStringSvg.classList.remove('hidden');
 
   let flipElapsed = FLIP_DURATION; // start at rest (no flip in progress)
@@ -145,7 +156,13 @@ function startCharmLoop() {
     // of a clean tilt, and swingTilt alone ranges up to 35°. Keeping the
     // swing's rotation on `charm` and the flip's squash+rotation on the
     // nested `charmInner` keeps each transform in its own local space.
-    charm.style.transform = `rotate(${swingTilt}deg)`;
+    // The Appearance panel's size slider (`sizeScale`) scales around the
+    // same top-center transform-origin as the swing rotation, so the charm
+    // grows/shrinks in place from its string attachment point rather than
+    // drifting off it.
+    const sizeScale = appearance.sizeScale ?? 1;
+    charm.style.transform = `scale(${sizeScale}) rotate(${swingTilt}deg)`;
+    charm.style.opacity = appearance.opacity ?? 1;
     charmInner.style.transform = `scaleX(${flip.scaleX}) rotate(${flip.rotation}deg)`;
     charm.style.filter = `drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4)) brightness(${flip.brightness})`;
 
@@ -161,6 +178,7 @@ function stopCharmLoop() {
   charmStringSvg.classList.add('hidden');
   charm.style.transform = '';
   charm.style.filter = '';
+  charm.style.opacity = '';
   charmInner.style.transform = '';
   triggerCharmFlip = () => {};
 }
@@ -479,8 +497,18 @@ function teardownCurrent() {
   interactiveEl = null;
 }
 
-function applyItem(item) {
+async function applyItem(item) {
   currentItem = item;
+  // Fetched before teardown so startCharmLoop (called synchronously below)
+  // already has it — the Appearance panel only offers rope-on-a-string
+  // controls, so anything other than a plain charm just renders at its
+  // catalog defaults.
+  appearance = item && item.type === 'charm' ? (await window.overlayAPI.getAppearance(item.id)) || {} : {};
+  // A rapid item switch (e.g. clicking through the gallery) could have
+  // this resolve after a *later* call already changed currentItem again —
+  // bail rather than tearing down and rebuilding for an item that's no
+  // longer the one selected.
+  if (currentItem !== item) return;
   teardownCurrent();
 
   if (!item || item.type === 'charm') {
@@ -575,6 +603,24 @@ window.overlayAPI.onSystemResume(async () => {
   displayInfo = await window.overlayAPI.getDisplayInfo();
   resizeEffectsCanvas();
   if (currentItem) applyItem(currentItem);
+});
+
+// From the Appearance settings panel (see gallery.js): applied live, in
+// place, rather than by re-running applyItem — a full reload would rebuild
+// the charm's DOM and restart its rope from a straight hang on every single
+// slider tick, which reads as a flicker/reset instead of a smooth live
+// preview. Size and opacity are read fresh every frame (see the frame()
+// loop in startCharmLoop) so updating `appearance` here is enough for
+// those; rope length and position go through the physics engine's own live
+// setters so the existing rope eases to the new values instead of jumping.
+window.overlayAPI.onAppearanceChanged((itemId, overrides) => {
+  if (!currentItem || currentItem.id !== itemId) return;
+  appearance = overrides || {};
+  if (!charmPhysics) return;
+  charmPhysics.setSegmentLength(15.5 * (appearance.ropeLengthScale ?? 1));
+  const width = displayInfo?.bounds?.width ?? window.overlayHost.size().width;
+  const anchorX = appearance.anchorXPct != null ? width * appearance.anchorXPct : displayInfo?.charmAnchorX ?? width - 200;
+  charmPhysics.setAnchorX(anchorX);
 });
 
 let isDragging = false;

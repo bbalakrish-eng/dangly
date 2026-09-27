@@ -9,7 +9,7 @@ function createTray({ onOpenGallery, onToggleVisibility }) {
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: 'Open Gallery…',
+      label: 'Choose & Customize…',
       click: () => onOpenGallery(),
     },
     { type: 'separator' },

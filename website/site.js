@@ -1,5 +1,9 @@
 (() => {
   const CATEGORIES = ['Charms', 'Rituals', 'Atmosphere', 'Pets'];
+  // The below-the-fold showcase, separate from CATEGORIES above: Pets is still a real category
+  // (Kitten stays reachable from the hero's own pills and its quick-pick pill), it's just not
+  // worth a whole showcase section for the one pet — a section for a single item reads as filler.
+  const SHOWCASE_CATEGORIES = ['Charms', 'Rituals', 'Atmosphere'];
   const START_ID = 'maneki-neko';
 
   // Not ready to show yet: placeholder art, emoji stand-ins, unfinished rituals.
@@ -30,6 +34,37 @@
   if (theme === 'orange' || theme === 'green' || theme === 'wallpaper') document.body.dataset.theme = theme;
 
   const $ = (id) => document.getElementById(id);
+
+  /* ───────── Light/dark mode ─────────
+     The actual color switch happens in CSS (see site.css's [data-mode] rules) and, for the very
+     first paint, an inline script in <head> — this only owns the toggle button and keeping the
+     page in sync with a live OS theme change while the visitor hasn't picked one explicitly. */
+  function initModeToggle() {
+    const button = $('modeToggle');
+    const root = document.documentElement;
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+
+    const apply = (resolved) => {
+      root.dataset.modeResolved = resolved;
+      button.setAttribute('aria-label', resolved === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+    };
+    apply(root.dataset.modeResolved || 'light');
+
+    button.addEventListener('click', () => {
+      const next = root.dataset.modeResolved === 'dark' ? 'light' : 'dark';
+      root.dataset.mode = next; // an explicit choice from here on, overriding the OS setting
+      try {
+        localStorage.setItem('mode', next);
+      } catch {}
+      apply(next);
+    });
+
+    // Only matters pre-choice: once the visitor has clicked the toggle, data-mode is set and
+    // this system-level event no longer changes anything (matching the <head> script's own logic).
+    media.addEventListener('change', (event) => {
+      if (!root.dataset.mode) apply(event.matches ? 'dark' : 'light');
+    });
+  }
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   let items = [];
@@ -252,7 +287,7 @@
 
   function renderGallery() {
     const main = $('all');
-    CATEGORIES.forEach((category) => {
+    SHOWCASE_CATEGORIES.forEach((category) => {
       const list = byCategory[category];
       if (!list?.length) return;
       const meta = SECTIONS[category];
@@ -280,9 +315,9 @@
         },
         { threshold: 0.08 }
       );
-      main.querySelectorAll('.reveal').forEach((node) => observer.observe(node));
+      document.querySelectorAll('.reveal').forEach((node) => observer.observe(node));
     } else {
-      main.querySelectorAll('.reveal').forEach((node) => node.classList.add('in'));
+      document.querySelectorAll('.reveal').forEach((node) => node.classList.add('in'));
     }
   }
 
@@ -340,7 +375,31 @@
   $('prev').addEventListener('click', () => step(-1));
   $('next').addEventListener('click', () => step(1));
 
+  // The "Give it a flick" section runs a second, independent live stage (its own overlay engine,
+  // in an iframe) — only worth starting once a visitor actually scrolls to it, not from page load
+  // alongside the hero's own copy of the same engine.
+  function initReplayFrame() {
+    const frame = $('replayFrame');
+    if (!frame || !frame.dataset.src) return;
+    if (!('IntersectionObserver' in window)) {
+      frame.src = frame.dataset.src;
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          frame.src = frame.dataset.src;
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+    observer.observe(frame);
+  }
+  initReplayFrame();
+
   async function init() {
+    initModeToggle();
     const response = await fetch('catalog/items.json');
     const catalog = await response.json();
     items = catalog.items.filter((item) => !HIDDEN_IDS.has(item.id));
