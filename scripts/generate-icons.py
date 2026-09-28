@@ -2,11 +2,10 @@
 """Regenerate the app's icon assets from the website's own brand mark.
 
 Source of truth is website/site.css's `.brand-mark` rule — a dark rounded
-square with an off-center lime dot hanging from a short lime line at the
-top edge (the charm-on-a-string motif, echoed at logo scale):
+square with a lime ring (a bead on a string) centered in the box:
   border-radius: 11px on a 36px box (~30.56% corner radius)
-  dot centered at 70%/30%, solid radius 5px on a 36px box (~13.89%)
-  line from the top edge down to the dot's own top edge, ~1.5px on 36px
+  ring centered at 50%/50%, outer radius ~18.2%, inner hole ~6.3% of the box
+  line from the top edge down to the ring's own top edge, ~1px on 36px
 Re-run this after changing those ratios or colors so the app icon and the
 website mark never drift apart.
 """
@@ -17,10 +16,11 @@ INK = (0x11, 0x13, 0x14, 255)
 LIME = (0xBD, 0xEA, 0x3F, 255)
 
 CORNER_RATIO = 11 / 36
-DOT_CX_RATIO = 0.70
-DOT_CY_RATIO = 0.30
-DOT_RADIUS_RATIO = 5 / 36
-LINE_WIDTH_RATIO = 1.5 / 36
+RING_CX_RATIO = 0.5
+RING_CY_RATIO = 0.5
+RING_OUTER_RATIO = 0.182
+RING_INNER_RATIO = 0.063
+LINE_WIDTH_RATIO = 0.023
 
 SUPERSAMPLE = 8
 
@@ -35,16 +35,18 @@ def render_mark(size, corner_ratio=CORNER_RATIO):
     else:
         draw.rectangle([0, 0, hi - 1, hi - 1], fill=INK)
 
-    cx = DOT_CX_RATIO * hi
-    cy = DOT_CY_RATIO * hi
-    r = DOT_RADIUS_RATIO * hi
+    cx = RING_CX_RATIO * hi
+    cy = RING_CY_RATIO * hi
+    outer = RING_OUTER_RATIO * hi
+    inner = RING_INNER_RATIO * hi
 
-    # The "string" — only drawn up to the dot's own top edge, never past it,
-    # so there's no seam where a line end might peek out from under the dot.
+    # The "string" — only drawn up to the ring's own top edge, never past it,
+    # so there's no seam where a line end might peek out from under the ring.
     lw = LINE_WIDTH_RATIO * hi
-    draw.rectangle([cx - lw / 2, 0, cx + lw / 2, cy - r + 1], fill=LIME)
+    draw.rectangle([cx - lw / 2, 0, cx + lw / 2, cy - outer + 1], fill=LIME)
 
-    draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=LIME)
+    draw.ellipse([cx - outer, cy - outer, cx + outer, cy + outer], fill=LIME)
+    draw.ellipse([cx - inner, cy - inner, cx + inner, cy + inner], fill=INK)
 
     return img.resize((size, size), Image.LANCZOS)
 
@@ -55,20 +57,19 @@ def render_tray_template(size):
     # selected-state highlight) rather than the mark's own colors — most of
     # the other icons in the bar follow this, ours stood out by being the
     # only full-color one. Same rounded-square silhouette as the real mark,
-    # but the dot becomes a punched-out transparent notch (negative space)
-    # instead of a lime fill, since a template image only has one color to
-    # work with — that notch is what keeps it recognizably *our* mark rather
-    # than a plain black square like everyone else's.
+    # with a single circular notch (matching the ring's outer radius) cut out
+    # as negative space — the ring's own inner hole is too fine a detail to
+    # survive at 18px, so this keeps just the bigger, legible shape.
     hi = size * SUPERSAMPLE
     mask = Image.new("L", (hi, hi), 0)
     mdraw = ImageDraw.Draw(mask)
     corner = CORNER_RATIO * hi
     mdraw.rounded_rectangle([0, 0, hi - 1, hi - 1], radius=corner, fill=255)
 
-    cx = DOT_CX_RATIO * hi
-    cy = DOT_CY_RATIO * hi
-    r = DOT_RADIUS_RATIO * hi
-    mdraw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=0)
+    cx = RING_CX_RATIO * hi
+    cy = RING_CY_RATIO * hi
+    outer = RING_OUTER_RATIO * hi
+    mdraw.ellipse([cx - outer, cy - outer, cx + outer, cy + outer], fill=0)
 
     mask = mask.resize((size, size), Image.LANCZOS)
     black = Image.new("RGBA", (size, size), (0, 0, 0, 255))
