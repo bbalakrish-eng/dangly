@@ -2,9 +2,11 @@
 """Regenerate the app's icon assets from the website's own brand mark.
 
 Source of truth is website/site.css's `.brand-mark` rule — a dark rounded
-square with an off-center lime dot:
+square with an off-center lime dot hanging from a short lime line at the
+top edge (the charm-on-a-string motif, echoed at logo scale):
   border-radius: 11px on a 36px box (~30.56% corner radius)
   dot centered at 70%/30%, solid radius 5px on a 36px box (~13.89%)
+  line from the top edge down to the dot's own top edge, ~1.5px on 36px
 Re-run this after changing those ratios or colors so the app icon and the
 website mark never drift apart.
 """
@@ -18,6 +20,7 @@ CORNER_RATIO = 11 / 36
 DOT_CX_RATIO = 0.70
 DOT_CY_RATIO = 0.30
 DOT_RADIUS_RATIO = 5 / 36
+LINE_WIDTH_RATIO = 1.5 / 36
 
 SUPERSAMPLE = 8
 
@@ -35,6 +38,12 @@ def render_mark(size, corner_ratio=CORNER_RATIO):
     cx = DOT_CX_RATIO * hi
     cy = DOT_CY_RATIO * hi
     r = DOT_RADIUS_RATIO * hi
+
+    # The "string" — only drawn up to the dot's own top edge, never past it,
+    # so there's no seam where a line end might peek out from under the dot.
+    lw = LINE_WIDTH_RATIO * hi
+    draw.rectangle([cx - lw / 2, 0, cx + lw / 2, cy - r + 1], fill=LIME)
+
     draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=LIME)
 
     return img.resize((size, size), Image.LANCZOS)

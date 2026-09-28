@@ -6,7 +6,7 @@ function createGalleryWindow() {
     width: 640,
     height: 660,
     resizable: true,
-    title: 'DANGLY',
+    title: 'Dangly',
     webPreferences: {
       preload: path.join(__dirname, '..', 'preload', 'gallery-preload.js'),
       contextIsolation: true,

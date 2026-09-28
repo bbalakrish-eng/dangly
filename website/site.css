@@ -155,10 +155,23 @@ a:focus-visible, button:focus-visible {
   text-decoration: none;
 }
 .brand-mark {
+  position: relative;
   width: 36px;
   height: 36px;
   border-radius: 11px;
   background: var(--ink) radial-gradient(circle at 70% 30%, var(--lime) 0 5px, transparent 5.5px);
+}
+/* The charm-on-a-string motif at logo scale: a short lime line from the top edge down to the
+   dot's own top edge (30% - 5px), so it never runs under/past the dot itself. */
+.brand-mark::before {
+  content: '';
+  position: absolute;
+  left: 70%;
+  top: 0;
+  width: 1.5px;
+  height: calc(30% - 5px);
+  background: var(--lime);
+  transform: translateX(-50%);
 }
 /* Same typeface as the headline, bold, with the headline's tight tracking. */
 .brand-name { font-size: 18px; font-weight: 700; letter-spacing: -0.03em; }

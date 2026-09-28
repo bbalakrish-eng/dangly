@@ -18,7 +18,7 @@ function createTray({ onOpenGallery, onToggleVisibility }) {
     icon = nativeImage.createFromPath(path.join(assets, 'icon.png')).resize({ width: 32, height: 32 });
   }
   const tray = new Tray(icon);
-  tray.setToolTip('DANGLY');
+  tray.setToolTip('Dangly');
 
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -35,7 +35,7 @@ function createTray({ onOpenGallery, onToggleVisibility }) {
     },
     { type: 'separator' },
     {
-      label: 'Quit DANGLY',
+      label: 'Quit Dangly',
       click: () => app.quit(),
     },
   ]);

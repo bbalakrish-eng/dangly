@@ -1,11 +1,11 @@
 {
   "name": "dangly",
-  "productName": "DANGLY",
+  "productName": "Dangly",
   "version": "0.1.0",
   "private": true,
   "description": "Lucky charms, rituals and weather hanging on your desktop, for Mac and PC",
   "main": "src/main/main.js",
-  "author": "DANGLY",
+  "author": "Dangly",
   "scripts": {
     "start": "electron .",
     "generate-icons": "python3 scripts/generate-icons.py",
@@ -18,7 +18,7 @@
   },
   "build": {
     "appId": "com.dangly.app",
-    "productName": "DANGLY",
+    "productName": "Dangly",
     "files": [
       "src/**/*",
       "catalog/**/*",
@@ -47,7 +47,7 @@
           ]
         }
       ],
-      "artifactName": "DANGLY-${version}-${arch}.${ext}"
+      "artifactName": "Dangly-${version}-${arch}.${ext}"
     },
     "win": {
       "icon": "assets/icon.png",
@@ -59,7 +59,7 @@
           ]
         }
       ],
-      "artifactName": "DANGLY-Setup-${version}-${arch}.${ext}"
+      "artifactName": "Dangly-Setup-${version}-${arch}.${ext}"
     },
     "nsis": {
       "oneClick": true,
