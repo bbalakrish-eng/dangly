@@ -6,7 +6,7 @@
   <title>Dangly</title>
   <meta name="description" content="Lucky charms, rituals and weather from traditions around the world, living on your screen. Try any of them in your browser." />
   <link rel="preload" href="fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="engine/overlay.css?v=2" />
+  <link rel="stylesheet" href="engine/overlay.css?v=3" />
   <!-- ?v= is a manual cache-buster: bump it (any change works, e.g. the date) whenever site.css
        changes, so a browser — or host — that cached the old file has to fetch the new one. -->
   <link rel="stylesheet" href="site.css?v=20" />
@@ -228,15 +228,15 @@
   <!-- ?v= cache-busts these the same way as site.css above: bump bridge.js's own whenever it
        changes, and bump all the engine/ ones together whenever any file under src/renderer/
        changes (they're synced here by scripts/sync-website.py). -->
-  <script src="bridge.js?v=2"></script>
-  <script src="engine/host.js?v=2"></script>
-  <script src="engine/effect-presets.js?v=2"></script>
-  <script src="engine/particle-engine.js?v=2"></script>
-  <script src="engine/pet-presets.js?v=2"></script>
-  <script src="engine/pet-engine.js?v=2"></script>
-  <script src="engine/charm-physics.js?v=2"></script>
-  <script src="engine/audio.js?v=2"></script>
-  <script src="engine/renderer.js?v=2"></script>
+  <script src="bridge.js?v=3"></script>
+  <script src="engine/host.js?v=3"></script>
+  <script src="engine/effect-presets.js?v=3"></script>
+  <script src="engine/particle-engine.js?v=3"></script>
+  <script src="engine/pet-presets.js?v=3"></script>
+  <script src="engine/pet-engine.js?v=3"></script>
+  <script src="engine/charm-physics.js?v=3"></script>
+  <script src="engine/audio.js?v=3"></script>
+  <script src="engine/renderer.js?v=3"></script>
   <!-- Same cache-buster as site.css above; bump together whenever either file changes. -->
   <script src="site.js?v=10"></script>
 </body>

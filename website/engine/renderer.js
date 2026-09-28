@@ -898,60 +898,151 @@ function exitRageMode() {
   if (rageCatcher) rageCatcher.classList.add('hidden');
   if (rageHint) rageHint.classList.add('hidden');
   if (rageLayer) rageLayer.innerHTML = '';
+  stopFireLoop();
 }
 
-let rageFireCounter = 0;
-
-// A scorch mark plus a rising flame plus a few soft smoke puffs, all
-// self-removing after a few seconds — this is the "self-cleaning" variant;
-// nothing here persists once its own timer fires.
-function spawnFireBlast(x, y) {
-  if (!rageLayer) return;
-  const gradId = `rageFlame-${rageFireCounter++}`;
-
-  const wrap = document.createElement('div');
-  wrap.className = 'rage-fire';
-  wrap.style.left = `${x}px`;
-  wrap.style.top = `${y}px`;
-
-  const scorch = document.createElement('div');
-  scorch.className = 'rage-fire-scorch';
-  const scale = 0.85 + Math.random() * 0.3;
-  const rotate = Math.round(Math.random() * 360);
-  scorch.style.transform = `translate(-50%, -50%) rotate(${rotate}deg) scale(${scale})`;
-  wrap.appendChild(scorch);
-
-  // Reuses .ritual-flame-wrap verbatim (same class, same markup helper) so
-  // it inherits that class's own position/overlap/opacity-transition rules
-  // instead of restating them here.
-  const flameWrap = document.createElement('div');
-  flameWrap.className = 'ritual-flame-wrap';
-  flameWrap.innerHTML = `<div class="ritual-flame-glow"></div>${flameSvgMarkup(gradId, 34, 76)}`;
-  wrap.appendChild(flameWrap);
-
-  for (let i = 0; i < 4; i++) {
-    const puff = document.createElement('div');
-    puff.className = 'rage-fire-smoke';
-    puff.style.animationDelay = `${i * 220}ms`;
-    puff.style.setProperty('--drift', `${Math.round(-10 + Math.random() * 20)}px`);
-    wrap.appendChild(puff);
+// A real particle burn, not a fixed vector flame shape — dozens of small
+// glowing circles with randomized size/speed/color, composited with
+// 'screen' so overlapping ones brighten each other instead of just
+// stacking flat, read as an organic, irregular flame far better than any
+// single fixed path could. Sparks are just a second, smaller/faster/
+// shorter-lived batch of the same particle — no separate system needed.
+// (Technique adapted from a canvas fire demo the user linked — see the
+// commit message for the source — not the ritual flame's SVG-path model.)
+class FireParticle {
+  constructor(x, y, opts = {}) {
+    this.x = x + (Math.random() * 30 - 15);
+    this.y = y + (Math.random() * 10 - 5);
+    this.size = opts.size ?? Math.random() * 20 + 10;
+    this.speedX = opts.vx ?? Math.random() * 3 - 1.5;
+    this.speedY = opts.vy ?? Math.random() * -3 - 1.5;
+    this.buoyancy = opts.buoyancy ?? Math.random() * -0.15 - 0.05;
+    this.gravity = opts.gravity ?? 0;
+    this.wobbleSpeed = Math.random() * 0.08 + 0.04;
+    this.wobbleIntensity = opts.wobbleIntensity ?? Math.random() * 2;
+    this.hue = opts.hue ?? Math.random() * 15 + 10; // 10-25: ember red-orange
+    this.brightness = opts.brightness ?? Math.random() * 20 + 60;
+    this.alpha = 1;
+    this.decay = opts.decay ?? Math.random() * 0.024 + 0.02;
+    this.shrink = opts.shrink ?? 0.35;
+    this.hueFade = opts.hueFade ?? 0.4;
+    this.brightnessFade = opts.brightnessFade ?? 1.2;
   }
 
-  rageLayer.appendChild(wrap);
-  requestAnimationFrame(() => {
-    wrap.classList.add('visible');
-    flameWrap.classList.add('visible');
-  });
+  update(frame) {
+    this.speedY += this.buoyancy + this.gravity;
+    this.y += this.speedY;
+    this.x += this.speedX + Math.sin(frame * this.wobbleSpeed) * this.wobbleIntensity;
+    this.alpha -= this.decay;
+    if (this.size > 0.5) this.size -= this.shrink;
+    if (this.hue > 0) this.hue -= this.hueFade;
+    if (this.brightness > 20) this.brightness -= this.brightnessFade;
+  }
 
-  const flicker = startFlameFlicker(flameWrap.querySelector('.ritual-flame-svg'));
+  dead() {
+    return this.alpha <= 0 || this.size <= 0.5;
+  }
+
+  draw(ctx) {
+    ctx.globalAlpha = Math.max(this.alpha, 0);
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, Math.max(this.size, 0), 0, Math.PI * 2);
+    ctx.fillStyle = `hsl(${this.hue}, 100%, ${this.brightness}%)`;
+    ctx.fill();
+  }
+}
+
+let fireParticles = [];
+let fireFrame = 0;
+let fireLoopHandle = null;
+
+// Runs only while there's actually something to draw — started on the
+// first spark of a burst, and left to stop itself once every particle in
+// it has fully decayed, rather than a fixed-duration timer that has to
+// guess how long that will take.
+function ensureFireLoop() {
+  if (fireLoopHandle) return;
+  const ctx = canvas.getContext('2d');
+  function tick() {
+    fireFrame++;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    for (let i = 0; i < fireParticles.length; i++) {
+      const p = fireParticles[i];
+      p.update(fireFrame);
+      p.draw(ctx);
+    }
+    ctx.restore();
+    fireParticles = fireParticles.filter((p) => !p.dead());
+    if (fireParticles.length > 0) {
+      fireLoopHandle = requestAnimationFrame(tick);
+    } else {
+      fireLoopHandle = null;
+    }
+  }
+  fireLoopHandle = requestAnimationFrame(tick);
+}
+
+function stopFireLoop() {
+  if (fireLoopHandle) cancelAnimationFrame(fireLoopHandle);
+  fireLoopHandle = null;
+  fireParticles = [];
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+// A scorch mark (DOM, since it's a simple static blotch) plus a burst of
+// particle flame and sparks (canvas, for the organic motion) — the scorch
+// is what gives the "burn effect" a moment to linger after the flame and
+// sparks themselves have already burned out and decayed away.
+function spawnFireBlast(x, y) {
+  if (rageLayer) {
+    const scorch = document.createElement('div');
+    scorch.className = 'rage-fire-scorch';
+    const scale = 0.85 + Math.random() * 0.3;
+    const rotate = Math.round(Math.random() * 360);
+    scorch.style.left = `${x}px`;
+    scorch.style.top = `${y}px`;
+    scorch.style.transform = `translate(-50%, -50%) rotate(${rotate}deg) scale(${scale})`;
+    rageLayer.appendChild(scorch);
+    requestAnimationFrame(() => scorch.classList.add('visible'));
+    setTimeout(() => scorch.classList.add('fading'), 2000);
+    setTimeout(() => scorch.remove(), 2900);
+  }
+
+  for (let i = 0; i < 22; i++) {
+    fireParticles.push(new FireParticle(x, y));
+  }
+
+  // Sparks: smaller, brighter (yellow, not orange), thrown outward in every
+  // direction rather than just up, with real gravity instead of buoyancy,
+  // and gone much faster — visually distinct from the flame body they burst
+  // out of.
+  for (let i = 0; i < 12; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = Math.random() * 4.5 + 2;
+    fireParticles.push(
+      new FireParticle(x, y, {
+        size: Math.random() * 3 + 1.5,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 1.5,
+        buoyancy: 0,
+        gravity: 0.12,
+        wobbleIntensity: 0,
+        hue: Math.random() * 10 + 45,
+        brightness: Math.random() * 10 + 85,
+        decay: Math.random() * 0.03 + 0.035,
+        shrink: 0.06,
+        hueFade: 0.8,
+        brightnessFade: 2,
+      })
+    );
+  }
+
+  ensureFireLoop();
 
   if (!muted) window.rageAudio?.playFireSound();
-
-  setTimeout(() => wrap.classList.add('fading'), 2100);
-  setTimeout(() => {
-    flicker.cancel();
-    wrap.remove();
-  }, 2700);
 }
 
 const easeOutCubic = (x) => 1 - Math.pow(1 - x, 3);

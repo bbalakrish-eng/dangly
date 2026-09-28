@@ -275,24 +275,12 @@
   z-index: 5;
 }
 
-.rage-fire {
-  position: absolute;
-  width: 0;
-  height: 0;
-  opacity: 0;
-  transition: opacity 0.5s ease;
-}
-.rage-fire.visible {
-  opacity: 1;
-}
-.rage-fire.fading {
-  opacity: 0;
-}
-
+/* The flame and sparks themselves are drawn on #effects (canvas, see
+   spawnFireBlast/ensureFireLoop in renderer.js) — this is just the scorch
+   mark left behind, the "burn effect" that lingers a moment after the
+   flame and sparks have already burned out and decayed away on their own. */
 .rage-fire-scorch {
   position: absolute;
-  left: 0;
-  top: 0;
   width: 64px;
   height: 64px;
   border-radius: 50%;
@@ -304,29 +292,12 @@
     transparent 82%
   );
   filter: blur(1px);
-}
-
-/* A handful of these, staggered by animation-delay in JS — each one drifts
-   up and fades on its own, so together they read as a loose wisp of smoke
-   rather than one repeating puff. */
-.rage-fire-smoke {
-  position: absolute;
-  left: 0;
-  top: -8px;
-  width: 14px;
-  height: 14px;
-  margin-left: -7px;
-  border-radius: 50%;
-  background: rgba(200, 200, 200, 0.5);
-  filter: blur(4px);
   opacity: 0;
-  /* One rise-and-fade, not infinite — with a staggered animation-delay per puff (set in JS),
-     one loop each reads as a single loose wisp; looping would snap each puff back down to
-     restart, which looked like a jittery repeating blob instead. */
-  animation: rage-smoke-rise 1.8s ease-out forwards;
+  transition: opacity 0.5s ease;
 }
-@keyframes rage-smoke-rise {
-  0% { transform: translate(0, 0) scale(0.6); opacity: 0; }
-  15% { opacity: 0.5; }
-  100% { transform: translate(var(--drift, 0px), -70px) scale(1.6); opacity: 0; }
+.rage-fire-scorch.visible {
+  opacity: 1;
+}
+.rage-fire-scorch.fading {
+  opacity: 0;
 }
