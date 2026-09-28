@@ -7,9 +7,16 @@ function createTray({ onOpenGallery, onToggleVisibility }) {
   // other menu-bar icons. Already rendered at the exact 18px tray size, with
   // a @2x sibling for Retina that Electron picks automatically — no
   // .resize() needed (forcing one would collapse that pairing to one size).
-  const iconPath = path.join(__dirname, '..', '..', 'assets', 'tray-iconTemplate.png');
-  const icon = nativeImage.createFromPath(iconPath);
-  icon.setTemplateImage(true);
+  const assets = path.join(__dirname, '..', '..', 'assets');
+  let icon;
+  if (process.platform === 'darwin') {
+    icon = nativeImage.createFromPath(path.join(assets, 'tray-iconTemplate.png'));
+    icon.setTemplateImage(true);
+  } else {
+    // Windows/Linux have no template-image tinting: a black silhouette would vanish on a dark
+    // taskbar. Use the full-colour app icon instead (so replacing assets/icon.png updates it too).
+    icon = nativeImage.createFromPath(path.join(assets, 'icon.png')).resize({ width: 32, height: 32 });
+  }
   const tray = new Tray(icon);
   tray.setToolTip('DANGLY');
 
