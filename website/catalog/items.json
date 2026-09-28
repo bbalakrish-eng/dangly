@@ -77,16 +77,6 @@
       "ritual": { "label": "Give it a flick", "animation": "flick" }
     },
     {
-      "id": "dragon",
-      "name": "Dragon",
-      "origin": "East Asia",
-      "category": "Charms",
-      "description": "A coiled dragon medallion for strength and good luck.",
-      "type": "charm",
-      "image": "assets/items/dragon.svg",
-      "ritual": { "label": "Give it a flick", "animation": "flick" }
-    },
-    {
       "id": "trishul",
       "name": "Trishul",
       "origin": "Hindu tradition",

@@ -7,7 +7,7 @@
   const START_ID = 'maneki-neko';
 
   // Not ready to show yet: placeholder art, emoji stand-ins, unfinished rituals.
-  const HIDDEN_IDS = new Set(['clover', 'star', 'heart', 'bell', 'dragon', 'puppy']);
+  const HIDDEN_IDS = new Set(['clover', 'star', 'heart', 'bell', 'puppy']);
 
   // Atmosphere has no artwork of its own, so it gets a line icon.
   const ICONS = { snowfall: 'snowflake', rainfall: 'cloud-rain', 'autumn-leaves': 'leaf' };
