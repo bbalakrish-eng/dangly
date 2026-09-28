@@ -1,15 +1,15 @@
 {
-  "name": "desktop-charms",
-  "productName": "Desktop Charms",
+  "name": "dangly",
+  "productName": "DANGLY",
   "version": "0.1.0",
   "private": true,
-  "description": "A customizable desktop charm and screen-effects overlay for Mac and PC",
+  "description": "Lucky charms, rituals and weather hanging on your desktop, for Mac and PC",
   "main": "src/main/main.js",
-  "author": "Desktop Charms",
+  "author": "DANGLY",
   "scripts": {
     "start": "electron .",
-    "generate-icons": "node scripts/generate-placeholder-icons.js",
-    "package:mac": "electron-builder --mac --dir",
+    "generate-icons": "python3 scripts/generate-icons.py",
+    "package:mac": "electron-builder --mac",
     "package:win": "electron-builder --win --dir"
   },
   "devDependencies": {
@@ -17,8 +17,8 @@
     "electron-builder": "^25.0.0"
   },
   "build": {
-    "appId": "com.desktopcharms.app",
-    "productName": "Desktop Charms",
+    "appId": "com.dangly.app",
+    "productName": "DANGLY",
     "files": [
       "src/**/*",
       "catalog/**/*",
@@ -31,11 +31,29 @@
     "mac": {
       "icon": "assets/icon.png",
       "category": "public.app-category.utilities",
-      "target": ["dir"]
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "DANGLY-${version}-${arch}.${ext}"
     },
     "win": {
       "icon": "assets/icon.png",
-      "target": ["dir"]
+      "target": [
+        "dir"
+      ]
     }
   }
 }

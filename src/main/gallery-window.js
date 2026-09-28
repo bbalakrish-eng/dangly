@@ -6,7 +6,7 @@ function createGalleryWindow() {
     width: 640,
     height: 660,
     resizable: true,
-    title: 'Desktop Charms',
+    title: 'DANGLY',
     webPreferences: {
       preload: path.join(__dirname, '..', 'preload', 'gallery-preload.js'),
       contextIsolation: true,

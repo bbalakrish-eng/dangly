@@ -11,7 +11,7 @@ function createTray({ onOpenGallery, onToggleVisibility }) {
   const icon = nativeImage.createFromPath(iconPath);
   icon.setTemplateImage(true);
   const tray = new Tray(icon);
-  tray.setToolTip('Desktop Charms');
+  tray.setToolTip('DANGLY');
 
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -28,7 +28,7 @@ function createTray({ onOpenGallery, onToggleVisibility }) {
     },
     { type: 'separator' },
     {
-      label: 'Quit Desktop Charms',
+      label: 'Quit DANGLY',
       click: () => app.quit(),
     },
   ]);
