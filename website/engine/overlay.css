@@ -274,30 +274,3 @@
   pointer-events: none;
   z-index: 5;
 }
-
-/* The flame and sparks themselves are drawn on #effects (canvas, see
-   spawnFireBlast/ensureFireLoop in renderer.js) — this is just the scorch
-   mark left behind, the "burn effect" that lingers a moment after the
-   flame and sparks have already burned out and decayed away on their own. */
-.rage-fire-scorch {
-  position: absolute;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    rgba(20, 14, 10, 0.55) 0%,
-    rgba(20, 14, 10, 0.4) 42%,
-    rgba(20, 14, 10, 0.16) 66%,
-    transparent 82%
-  );
-  filter: blur(1px);
-  opacity: 0;
-  transition: opacity 0.5s ease;
-}
-.rage-fire-scorch.visible {
-  opacity: 1;
-}
-.rage-fire-scorch.fading {
-  opacity: 0;
-}

@@ -725,6 +725,13 @@ document.addEventListener('mousedown', (e) => {
 });
 
 window.addEventListener('mouseup', (e) => {
+  if (rageActive) {
+    // Caught at the window level, not just on rageCatcher, so releasing the
+    // button after dragging past the window edge still stops the trail.
+    rageMouseDown = false;
+    return;
+  }
+
   if (currentItem?.type === 'charm') {
     if (isDragging && !didDrag) {
       performRitual();
@@ -753,8 +760,19 @@ window.addEventListener('mouseup', (e) => {
 if (rageCatcher) {
   rageCatcher.addEventListener('mousedown', (e) => {
     if (!rageActive || !currentItem || currentItem.type !== 'rage') return;
+    rageMouseDown = true;
     const point = window.overlayHost.point(e);
     if (currentItem.rage?.effect === 'fire') spawnFireBlast(point.x, point.y);
+  });
+
+  // Continuous drag trail: while the button stays down, keep spawning a
+  // light trickle of fire along the path instead of only reacting to the
+  // single initial click — matches the referenced example's press-and-drag
+  // painting behavior.
+  rageCatcher.addEventListener('mousemove', (e) => {
+    if (!rageMouseDown || !rageActive || !currentItem || currentItem.type !== 'rage') return;
+    const point = window.overlayHost.point(e);
+    if (currentItem.rage?.effect === 'fire') spawnFireTrail(point.x, point.y);
   });
 }
 
@@ -877,6 +895,7 @@ function performIgniteRitual(ritual) {
 // full-window element with pointer-events enabled just for this; leaving it
 // is what hands click-through back to the desktop underneath.
 let rageActive = false;
+let rageMouseDown = false; // tracked so a drag across the screen can keep spawning fire, not just the initial click
 
 function enterRageMode(item) {
   rageActive = true;
@@ -895,6 +914,7 @@ function enterRageMode(item) {
 function exitRageMode() {
   if (!rageActive) return;
   rageActive = false;
+  rageMouseDown = false;
   if (rageCatcher) rageCatcher.classList.add('hidden');
   if (rageHint) rageHint.classList.add('hidden');
   if (rageLayer) rageLayer.innerHTML = '';
@@ -992,43 +1012,30 @@ function stopFireLoop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
-// A scorch mark (DOM, since it's a simple static blotch) plus a burst of
-// particle flame and sparks (canvas, for the organic motion) — the scorch
-// is what gives the "burn effect" a moment to linger after the flame and
-// sparks themselves have already burned out and decayed away.
+// A burst of particle flame and sparks (canvas, for the organic motion) —
+// no lingering scorch/burn decal after it decays, just the fire itself.
 function spawnFireBlast(x, y) {
-  if (rageLayer) {
-    const scorch = document.createElement('div');
-    scorch.className = 'rage-fire-scorch';
-    const scale = 0.85 + Math.random() * 0.3;
-    const rotate = Math.round(Math.random() * 360);
-    scorch.style.left = `${x}px`;
-    scorch.style.top = `${y}px`;
-    scorch.style.transform = `translate(-50%, -50%) rotate(${rotate}deg) scale(${scale})`;
-    rageLayer.appendChild(scorch);
-    requestAnimationFrame(() => scorch.classList.add('visible'));
-    setTimeout(() => scorch.classList.add('fading'), 2000);
-    setTimeout(() => scorch.remove(), 2900);
-  }
-
   for (let i = 0; i < 22; i++) {
     fireParticles.push(new FireParticle(x, y));
   }
 
-  // Sparks: smaller, brighter (yellow, not orange), thrown outward in every
-  // direction rather than just up, with real gravity instead of buoyancy,
-  // and gone much faster — visually distinct from the flame body they burst
-  // out of.
+  // Sparks: smaller, brighter (yellow, not orange), thrown up and outward
+  // in a wide cone around "up" — not a full 360° radial burst. A symmetric
+  // radial explosion (including sparks flung straight down and sideways)
+  // is what reads as a firework/muzzle-blast; real embers only ever fly
+  // up-and-out, so keeping the angle inside that cone is what makes this
+  // read as fire sparks instead of a "gunshot".
+  const sparkSpread = Math.PI * 0.7; // ~126° wide fan centered on straight up
   for (let i = 0; i < 12; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const speed = Math.random() * 4.5 + 2;
+    const angle = -Math.PI / 2 + (Math.random() - 0.5) * sparkSpread;
+    const speed = Math.random() * 3.5 + 1.5;
     fireParticles.push(
       new FireParticle(x, y, {
         size: Math.random() * 3 + 1.5,
         vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 1.5,
+        vy: Math.sin(angle) * speed,
         buoyancy: 0,
-        gravity: 0.12,
+        gravity: 0.1,
         wobbleIntensity: 0,
         hue: Math.random() * 10 + 45,
         brightness: Math.random() * 10 + 85,
@@ -1043,6 +1050,20 @@ function spawnFireBlast(x, y) {
   ensureFireLoop();
 
   if (!muted) window.rageAudio?.playFireSound();
+}
+
+// A lighter version of spawnFireBlast for continuous mouse-drag trails — just
+// a few flame particles, no scorch mark and no sound (those are one-shot
+// reactions to a discrete click, not something that should repeat on every
+// frame of a drag). Called from rageCatcher's mousemove handler while the
+// button is held, mirroring the referenced example's press-and-drag
+// painting instead of only supporting single discrete clicks.
+function spawnFireTrail(x, y) {
+  if (fireParticles.length > 400) return; // cap so a long drag can't run away
+  for (let i = 0; i < 3; i++) {
+    fireParticles.push(new FireParticle(x, y));
+  }
+  ensureFireLoop();
 }
 
 const easeOutCubic = (x) => 1 - Math.pow(1 - x, 3);
