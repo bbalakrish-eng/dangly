@@ -124,12 +124,26 @@ a:focus-visible, button:focus-visible {
   padding: 4px 30px 26px 14px;
 }
 
-/* Top row: logo, name and category pills on one line (they wrap only on narrow columns). */
+/* Top row: logo, then one white bar holding the category pills with the light/dark toggle at its
+   right end. On a column too narrow for both on one line, the bar wraps below the logo and takes
+   the full width instead of squeezing. */
 .toprow {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 14px;
+  gap: 10px 16px;
+}
+.navbar {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 /* Logo slot: ~36px tall, left of the wordmark. */
@@ -154,10 +168,7 @@ a:focus-visible, button:focus-visible {
    would turn near-white in dark mode and vanish against this pill's always-white surface. */
 .pillnav {
   display: inline-flex;
-  padding: 5px;
-  border-radius: 999px;
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  min-width: 0;
 }
 .pillnav button {
   padding: 9px clamp(11px, 1.05vw, 17px);
@@ -170,16 +181,17 @@ a:focus-visible, button:focus-visible {
 .pillnav button:hover { background: rgba(17, 19, 20, 0.05); color: var(--chip-ink); }
 .pillnav button[aria-current='true'] { background: var(--chip-ink); color: #fff; }
 
-/* Light/dark toggle — same fixed white-chip surface as the pill nav beside it. Both icons are
-   always in the DOM; only one is shown, decided by data-mode-resolved (see site.js), which is set
-   before first paint so there's no flash of the wrong icon. */
+/* Light/dark toggle — a small circle at the right end of the white bar, so it gets a hairline
+   edge to stay visible on the bar's own white. Both icons are always in the DOM; only one is
+   shown, decided by data-mode-resolved (see site.js), which is set before first paint so there's
+   no flash of the wrong icon. */
 .mode-toggle {
   width: 38px;
   height: 38px;
   flex: none;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 0 0 1px rgba(17, 19, 20, 0.06), 0 1px 3px rgba(0, 0, 0, 0.06);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -251,8 +263,6 @@ h1 {
   font-size: 12.5px;
   line-height: 1.45;
   font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.01em;
 }
 .copy::before {
   content: '';
@@ -317,6 +327,12 @@ h1 {
 }
 .chip .ic { font-size: 16px; }
 .chip small { font-size: 12px; color: var(--ink2); font-weight: 400; }
+
+/* Base positions (moved here from inline styles so the mobile override below can actually win
+   without !important). Tuned for the tall desktop stage, where the hanging charm's resting swing
+   never reaches this height. */
+#chipHint { left: 9%; top: 42%; }
+#chipOrigin { right: 8%; top: 54%; }
 
 .vert {
   position: absolute;
@@ -387,33 +403,11 @@ h1 {
 .tags button:focus-visible { outline-color: #fff; }
 
 /* Wallpaper theme */
-.menubar { display: none; }
 body[data-theme='wallpaper'] .stage {
   background: #16284a url('assets/wallpapers/dusk.webp') center / cover no-repeat;
 }
 body[data-theme='wallpaper'] .floor { display: none; }
 body[data-theme='wallpaper'] .vert { top: 46px; }
-body[data-theme='wallpaper'] .menubar {
-  position: absolute;
-  z-index: 1;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 26px;
-  padding: 0 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 12.5px;
-  color: rgba(255, 255, 255, 0.92);
-  background: rgba(10, 16, 30, 0.3);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  pointer-events: none;
-}
-.mb-left { display: flex; gap: 18px; }
-.mb-left b { font-weight: 700; letter-spacing: -0.02em; }
-.mb-right { margin-right: 215px; } /* clear of the Get the app notch */
 
 /* Notches: page-coloured shapes cut into the stage's corners, with concave fillets. */
 .notch { position: absolute; z-index: 4; background: var(--bg); }
@@ -489,6 +483,14 @@ body[data-theme='wallpaper'] .menubar {
 .tray-card:active { transform: scale(0.98); }
 .tray-card[aria-pressed='true'] { outline: 2px solid var(--ink); outline-offset: -2px; background: var(--card-on); }
 .tray-card .art { height: 100%; width: 100%; }
+/* Atmosphere art (a glyph, or a leaf photo cropped tight with no margin of its own) has no
+   built-in breathing room the way a charm's own photo does, so at this card's small size it
+   reads bigger than its neighbors even under the same max-width/max-height:100%. A glyph also
+   has a fixed 104px font-size regardless of the container, which just overflows a card this
+   small. Scoped to .art-mini (Atmosphere only — see artFor) so charm/ritual photos in the same
+   tray keep their existing size. */
+.tray-card .art-mini .glyph { font-size: 40px; }
+.tray-card .art-mini img { max-width: 48px; max-height: 48px; }
 .tray-card em {
   position: absolute;
   left: 8px;
@@ -581,6 +583,11 @@ body[data-theme='wallpaper'] .menubar {
 .card.mood { height: 250px; display: flex; flex-direction: column; justify-content: flex-start; gap: 66px; }
 .card.mood .art { justify-content: flex-start; }
 .card.mood .art .icon { width: 44px; height: 44px; }
+/* A real photo or emoji illustration reads richer than the flat line icon above, but at the
+   icon's own 44px it would look like a thumbnail crop — a little bigger reads as art on
+   purpose, not a fallback that didn't fit. */
+.card.mood .art img { max-width: 64px; max-height: 64px; }
+.card.mood .art .glyph { font-size: 56px; }
 .card.mood .desc { margin-top: 8px; font-size: 14px; line-height: 1.5; color: var(--ink2); max-width: 32ch; }
 
 .reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.8s var(--ease), transform 0.8s var(--ease); }
@@ -677,23 +684,64 @@ body[data-theme='wallpaper'] .menubar {
 }
 
 /* ───────── Footer ───────── */
+/* Fixed near-black + the brand's lime, not the page's own mode-dependent tokens or the stage's
+   wallpaper gradient — this band is meant to read as "the brand," the same two colors as the
+   logo mark, in both light and dark page mode alike. */
 .foot {
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
   margin: 0 32px 32px;
-  padding: 44px 48px;
+  padding: 76px 56px;
   border-radius: var(--r);
-  background: linear-gradient(180deg, var(--wall-a), var(--wall-b));
+  /* Explicit background-color, not the trailing color slot in the `background` shorthand — a
+     bare var() there doesn't reliably parse as a color across engines and silently drops the
+     whole background-color, leaving this transparent (and the white heading invisible on the
+     light page behind it). */
+  background-color: var(--chip-ink);
+  background-image: radial-gradient(120% 160% at 88% 8%, rgba(189, 234, 63, 0.26), transparent 55%);
   color: #fff;
   max-width: 1456px;
 }
 @media (min-width: 1584px) { .foot { margin-left: auto; margin-right: auto; } }
-.foot h2 { margin: 0; font-size: clamp(1.8rem, 3vw, 2.8rem); font-weight: 600; letter-spacing: -0.04em; line-height: 1.05; }
-.foot p { margin: 10px 0 0; color: rgba(255, 255, 255, 0.78); font-size: 16px; }
+.foot > div, .foot-ctas { position: relative; z-index: 1; }
+.foot h2 { margin: 0; font-size: clamp(2.1rem, 3.6vw, 3.4rem); font-weight: 600; letter-spacing: -0.04em; line-height: 1.05; }
+.foot p { margin: 12px 0 0; color: rgba(255, 255, 255, 0.78); font-size: 16px; }
 .foot .get-dark { background: #fff; color: var(--chip-ink); flex: none; }
 .foot .get-dark i { background: var(--chip-ink); color: #fff; }
+
+/* A big, mostly-hidden echo of the logo mark itself (same rounded-square-plus-dot shape,
+   scaled way up and faded into the corner) — a quiet brand flourish rather than another loud
+   element, clipped by .foot's own overflow:hidden so it never pokes past the rounded corner. */
+.foot-mark {
+  position: absolute;
+  top: -70px;
+  right: -70px;
+  width: 300px;
+  height: 300px;
+  border-radius: 86px;
+  background: rgba(255, 255, 255, 0.04) radial-gradient(circle at 70% 30%, rgba(189, 234, 63, 0.4) 0 100px, transparent 102px);
+  transform: rotate(-14deg);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.foot-ctas { display: flex; flex-wrap: wrap; gap: 12px; flex: none; }
+/* The trailing arrow (kept alongside the new platform icon, per request) — bare, not in its
+   own circle badge, so the button reads as "[platform icon] Download for macOS →" rather than
+   two competing icon badges. */
+.get-arrow { width: 15px; height: 15px; margin-left: 2px; }
+
+/* Windows isn't out yet — same shape and platform-icon language as the macOS button so the two
+   read as a pair, but visibly inert: dimmed, no hover lift, not an actual link (a <span>, not
+   an <a>, since there's nowhere for it to go yet). */
+.get-soon { background: rgba(255, 255, 255, 0.14); color: rgba(255, 255, 255, 0.78); cursor: default; }
+.get-soon i { background: rgba(255, 255, 255, 0.16); color: #fff; }
+.get-soon:hover { box-shadow: none; }
+.get-soon:active { transform: none; }
 
 /* A quiet closing bar under the dark CTA band — follows the page's own light/dark mode (unlike
    the CTA band above it, which is always dark), since it's ordinary page chrome, not a moment. */
@@ -754,10 +802,35 @@ body[data-theme='wallpaper'] .menubar {
   .card.side .art { height: 200px; }
   .card.side .txt { padding: 4px 22px 22px; }
   .foot { flex-direction: column; align-items: flex-start; }
+
+  /* The quick-pick tags (bottom-right) and the thumbnail tray (bottom-left) are sized for the
+     wide desktop stage, where there's room for both. Below 900px the stage is narrower than the
+     two put together, so they overlap — the tray's opaque panel was drawing over the left edge
+     of whichever tag pills sat behind it. Every item here is already reachable from the pill nav
+     up top and the full grid below, so hiding this shortcut row on the narrow stage is a clean
+     way to drop the collision rather than trying to squeeze both into too little width. */
+  .tags { display: none; }
+
+  /* On the shorter 620px mobile stage (vs. the tall desktop hero), a hanging charm's resting
+     swing reaches down into the same band as the hint chip at its desktop top:42%, so the coin/
+     charm art was rendering over the chip's own text. Moving it down near the floor line clears
+     the swing entirely. */
+  #chipHint { top: 66%; }
 }
 @media (max-width: 560px) {
   .grid.charms, .grid.wide, .grid.mood { grid-template-columns: 1fr; }
   .why-grid { grid-template-columns: 1fr; }
   .why-item { border-left: 0; }
   .all, .why, .faq { padding-inline: 16px; }
+
+  /* The thumbnail tray (3 cards + pager) is sized for the desktop stage; at phone widths the
+     stage itself is only ~300-340px wide, and .stage clips overflow-x, so without this the
+     "next" arrow and part of a card render entirely outside the visible/clickable area. */
+  .n-bl { padding: 12px 14px 12px 0; }
+  .cards { gap: 6px; }
+  .tray-card { width: 78px; height: 108px; padding: 8px 6px 28px; }
+  .tray-card em { height: 24px; left: 5px; right: 5px; bottom: 5px; padding: 0 4px; font-size: 10px; }
+  .pager { margin-top: 8px; }
+  .pager b { font-size: 18px; }
+  .pager button { width: 28px; height: 28px; }
 }

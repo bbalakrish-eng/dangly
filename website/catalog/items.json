@@ -119,16 +119,6 @@
       "ritual": { "label": "Give it a flick", "animation": "flick" }
     },
     {
-      "id": "dream-catcher",
-      "name": "Dream Catcher",
-      "origin": "Native American tradition",
-      "category": "Charms",
-      "description": "A woven web that catches bad dreams and lets good ones through.",
-      "type": "charm",
-      "image": "assets/items/dream-catcher.svg",
-      "ritual": { "label": "Give it a flick", "animation": "flick" }
-    },
-    {
       "id": "crescent-lantern",
       "name": "Crescent Lantern",
       "origin": "Islamic tradition",
@@ -183,6 +173,17 @@
       "type": "charm",
       "image": "assets/items/jack-o-lantern.webp",
       "imageHeight": 100,
+      "ritual": { "label": "Give it a flick", "animation": "flick" }
+    },
+    {
+      "id": "skeleton",
+      "name": "Skeleton",
+      "origin": "Halloween",
+      "category": "Charms",
+      "description": "A grinning skeleton in a witch's hat, holding its own jack-o'-lantern.",
+      "type": "charm",
+      "image": "assets/items/skeleton.webp",
+      "imageHeight": 170,
       "ritual": { "label": "Give it a flick", "animation": "flick" }
     },
     {
@@ -247,6 +248,7 @@
       "description": "Leaves tumble and sway on their way down, drifting around your cursor.",
       "type": "effect",
       "glyph": "🍂",
+      "image": "assets/items/autumn-leaf-4.webp",
       "effect": { "preset": "leaves" }
     },
     {
@@ -307,24 +309,19 @@
       }
     },
     {
-      "id": "ash-gourd-break",
-      "name": "Ash Gourd Breaking",
-      "origin": "South Indian ritual",
+      "id": "candle-lighting",
+      "name": "Candle Lighting",
+      "origin": "Everyday ritual",
       "category": "Rituals",
-      "description": "Smash the ash gourd to ward off evil eye before a new beginning.",
+      "description": "A candle kept burning for focus, for memory, or just for the quiet of a small flame.",
       "type": "ritual",
-      "image": "assets/items/ash-gourd-whole.svg",
+      "image": "assets/items/candle.webp",
       "ritual": {
-        "label": "Break the ash gourd",
-        "animation": "break",
-        "brokenImage": "assets/items/ash-gourd-broken.svg",
-        "resetAfterMs": 2200,
-        "burstColors": ["#cddbc0", "#ffffff", "#8ba378"],
-        "burstShape": "shard",
-        "burstCount": 28,
-        "burstSizeRange": [6, 13],
-        "burstSpeedRange": [140, 320],
-        "burstLifespanMs": 850
+        "animation": "ignite",
+        "persistent": true,
+        "flameAnchor": { "xPct": 47, "yPct": 4 },
+        "flameWidth": 32,
+        "flameHeight": 76
       }
     },
     {

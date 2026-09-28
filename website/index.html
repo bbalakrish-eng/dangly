@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="engine/overlay.css" />
   <!-- ?v= is a manual cache-buster: bump it (any change works, e.g. the date) whenever site.css
        changes, so a browser — or host — that cached the old file has to fetch the new one. -->
-  <link rel="stylesheet" href="site.css?v=4" />
+  <link rel="stylesheet" href="site.css?v=14" />
   <script>
     // Runs before first paint (inline, in <head>) so the page never flashes the wrong mode —
     // by the time site.css's [data-mode]/[data-mode-resolved] rules apply, this has already run.
@@ -38,11 +38,13 @@
             <span class="brand-mark" aria-hidden="true"></span>
             <span class="brand-name">DANGLY</span>
           </a>
-          <nav class="pillnav" id="pillnav" aria-label="Categories"></nav>
-          <button type="button" class="mode-toggle" id="modeToggle" aria-label="Switch to dark mode">
-            <i class="ic ic-sun" style="--i: url(icons/sun.svg)"></i>
-            <i class="ic ic-moon" style="--i: url(icons/moon.svg)"></i>
-          </button>
+          <div class="navbar">
+            <nav class="pillnav" id="pillnav" aria-label="Categories"></nav>
+            <button type="button" class="mode-toggle" id="modeToggle" aria-label="Switch to dark mode">
+              <i class="ic ic-sun" style="--i: url(icons/sun.svg)"></i>
+              <i class="ic ic-moon" style="--i: url(icons/moon.svg)"></i>
+            </button>
+          </div>
         </div>
 
         <h1>Lucky charms<br />for your<span class="faces" id="faces" aria-hidden="true"></span><br />desktop.</h1>
@@ -59,13 +61,8 @@
       <section class="right">
         <div class="stage" id="stage">
           <div class="floor"></div>
-          <!-- Only shown in the "wallpaper" theme: a Mac menu bar over the wallpaper. -->
-          <div class="menubar" aria-hidden="true">
-            <div class="mb-left"><b>DANGLY</b><span>File</span><span>Edit</span><span>View</span><span>Window</span><span>Help</span></div>
-            <div class="mb-right" id="clock"></div>
-          </div>
-          <div class="chip" id="chipHint" style="left: 9%; top: 42%"></div>
-          <div class="chip" id="chipOrigin" style="right: 8%; top: 54%"></div>
+          <div class="chip" id="chipHint"></div>
+          <div class="chip" id="chipOrigin"></div>
 
           <!-- The live preview: the same engine the desktop app runs, confined to this stage. -->
           <div class="overlay" id="overlay" aria-hidden="true">
@@ -182,11 +179,22 @@
   </section>
 
   <footer class="foot" id="get">
+    <span class="foot-mark" aria-hidden="true"></span>
     <div>
       <h2>Keep them on your screen.</h2>
       <p>Charms, rituals and weather for your Mac and PC.</p>
     </div>
-    <a class="get get-dark" href="#get"><i><b class="ic" style="--i: url(icons/arrow-up-right.svg)"></b></i>Get the app</a>
+    <div class="foot-ctas">
+      <a class="get get-dark" href="#get">
+        <i><b class="ic" style="--i: url(icons/apple.svg)"></b></i>
+        Download for macOS
+        <b class="ic get-arrow" style="--i: url(icons/arrow-up-right.svg)"></b>
+      </a>
+      <span class="get get-soon" aria-disabled="true">
+        <i><b class="ic" style="--i: url(icons/windows.svg)"></b></i>
+        Coming soon for Windows
+      </span>
+    </div>
   </footer>
 
   <div class="site-foot">
@@ -215,6 +223,6 @@
   <script src="engine/charm-physics.js"></script>
   <script src="engine/renderer.js"></script>
   <!-- Same cache-buster as site.css above; bump together whenever either file changes. -->
-  <script src="site.js?v=4"></script>
+  <script src="site.js?v=10"></script>
 </body>
 </html>

@@ -12,6 +12,27 @@ function createParticleSystem(canvas, rawConfig) {
   let animationFrame = null;
   let lastTime = null;
 
+  // Real art for image-shaped particles (e.g. the autumn leaves) — loaded once per config.images
+  // entry, keyed by the catalog-relative path so spawnParticle() can just pick a key at random.
+  // resolveAssetPath is async (the app resolves it to a file:// path; the website just echoes it
+  // back), so a particle can exist for a few frames before its image is ready — drawParticle()
+  // skips it silently until then rather than waiting on a promise mid-frame.
+  const imageCache = {};
+  if (config.images && config.images.length) {
+    config.images.forEach((src) => {
+      const entry = { img: new Image(), ready: false, aspect: 1 };
+      imageCache[src] = entry;
+      const resolved = window.overlayAPI ? window.overlayAPI.resolveAssetPath(src) : Promise.resolve(src);
+      resolved.then((url) => {
+        entry.img.onload = () => {
+          entry.ready = true;
+          entry.aspect = entry.img.naturalWidth / entry.img.naturalHeight;
+        };
+        entry.img.src = url;
+      });
+    });
+  }
+
   // Ground/accumulation state (only used when config.accumulate is true —
   // e.g. snow settling at the bottom edge instead of just recycling).
   const PILE_BUCKET_WIDTH = 8;
@@ -112,6 +133,7 @@ function createParticleSystem(canvas, rawConfig) {
         : 14,
       speed: useDepth ? lerpRange(config.fallSpeedRange, depth) : randomBetween(config.fallSpeedRange[0], config.fallSpeedRange[1]),
       glyph: config.glyphs ? config.glyphs[Math.floor(Math.random() * config.glyphs.length)] : null,
+      imageSrc: config.images ? config.images[Math.floor(Math.random() * config.images.length)] : null,
       shapePoints: randomShapePoints(),
       rotation: Math.random() * Math.PI * 2,
       rotationSpeed: config.rotate ? randomBetween(-1, 1) : 0,
@@ -316,6 +338,20 @@ function createParticleSystem(canvas, rawConfig) {
         ctx.arc(p.x, y, p.size, 0, Math.PI * 2);
       }
       ctx.fill();
+      ctx.restore();
+      return;
+    }
+
+    if (config.shape === 'image') {
+      const entry = p.imageSrc && imageCache[p.imageSrc];
+      if (!entry || !entry.ready) return; // not loaded yet — this particle just sits out a few frames
+      const drawWidth = p.size;
+      const drawHeight = p.size / entry.aspect;
+      ctx.save();
+      ctx.translate(p.x, y);
+      if (config.rotate) ctx.rotate(p.rotation);
+      ctx.globalAlpha = config.opacity ?? 1;
+      ctx.drawImage(entry.img, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
       ctx.restore();
       return;
     }

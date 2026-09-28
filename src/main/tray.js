@@ -2,8 +2,14 @@ const { Tray, Menu, app, nativeImage } = require('electron');
 const path = require('path');
 
 function createTray({ onOpenGallery, onToggleVisibility }) {
-  const iconPath = path.join(__dirname, '..', '..', 'assets', 'tray-icon.png');
-  const icon = nativeImage.createFromPath(iconPath).resize({ width: 18, height: 18 });
+  // A macOS "template image" — a flat black silhouette that AppKit tints to
+  // match the menu bar (light or dark) and highlights on click, same as most
+  // other menu-bar icons. Already rendered at the exact 18px tray size, with
+  // a @2x sibling for Retina that Electron picks automatically — no
+  // .resize() needed (forcing one would collapse that pairing to one size).
+  const iconPath = path.join(__dirname, '..', '..', 'assets', 'tray-iconTemplate.png');
+  const icon = nativeImage.createFromPath(iconPath);
+  icon.setTemplateImage(true);
   const tray = new Tray(icon);
   tray.setToolTip('Desktop Charms');
 

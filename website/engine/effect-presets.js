@@ -40,9 +40,23 @@ window.EFFECT_PRESETS = {
     glassSplash: false,
   },
   leaves: {
-    density: 30,
-    glyphs: ['🍁', '🍂'],
-    sizeRange: [18, 28],
+    density: 22,
+    shape: 'image',
+    // Individually cut from art-source/items/autuman_leaves.png (see
+    // scripts/optimize-images.py) rather than the 🍁/🍂 emoji glyphs this
+    // replaced — real leaf photos read far better at this size than a tiny
+    // flat emoji.
+    images: [
+      'assets/items/autumn-leaf-1.webp',
+      'assets/items/autumn-leaf-2.webp',
+      'assets/items/autumn-leaf-3.webp',
+      'assets/items/autumn-leaf-4.webp',
+      'assets/items/autumn-leaf-5.webp',
+      'assets/items/autumn-leaf-6.webp',
+      'assets/items/autumn-leaf-7.webp',
+      'assets/items/autumn-leaf-8.webp',
+    ],
+    sizeRange: [24, 42],
     fallSpeedRange: [30, 60],
     swayAmplitude: 40,
     swayFrequency: 0.3,

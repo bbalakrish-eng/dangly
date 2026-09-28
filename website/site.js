@@ -1,16 +1,16 @@
 (() => {
-  const CATEGORIES = ['Charms', 'Rituals', 'Atmosphere', 'Pets'];
-  // The below-the-fold showcase, separate from CATEGORIES above: Pets is still a real category
-  // (Kitten stays reachable from the hero's own pills and its quick-pick pill), it's just not
-  // worth a whole showcase section for the one pet — a section for a single item reads as filler.
+  // Pets (just Kitten) is fully removed from the website's own nav — not worth a category pill,
+  // a quick-pick tag, or a showcase section for one item. The catalog entry itself is untouched
+  // (the app still shows it); this just keeps it out of every website UI surface.
+  const CATEGORIES = ['Charms', 'Rituals', 'Atmosphere'];
   const SHOWCASE_CATEGORIES = ['Charms', 'Rituals', 'Atmosphere'];
   const START_ID = 'maneki-neko';
 
   // Not ready to show yet: placeholder art, emoji stand-ins, unfinished rituals.
-  const HIDDEN_IDS = new Set(['clover', 'star', 'heart', 'bell', 'dragon', 'dream-catcher', 'ash-gourd-break', 'puppy']);
+  const HIDDEN_IDS = new Set(['clover', 'star', 'heart', 'bell', 'dragon', 'puppy']);
 
   // Atmosphere has no artwork of its own, so it gets a line icon.
-  const ICONS = { snowfall: 'snowflake', rainfall: 'cloud-rain', 'autumn-leaves': 'leaf', kitten: 'cat' };
+  const ICONS = { snowfall: 'snowflake', rainfall: 'cloud-rain', 'autumn-leaves': 'leaf' };
 
   // Quick picks cut into the stage's bottom-right corner.
   const QUICK = [
@@ -19,14 +19,12 @@
     ['autumn-leaves', 'Leaves'],
     ['coconut-break', 'Coconut'],
     ['lamp-lighting', 'Lamp'],
-    ['kitten', 'Kitten'],
   ];
 
   const SECTIONS = {
     Charms: { blurb: 'Hang one from the top of your screen. Drag it, flick it, and watch it swing.', layout: 'charms' },
     Rituals: { blurb: 'Small ceremonies, played out on your desktop. Click to begin.', layout: 'wide' },
     Atmosphere: { blurb: 'Weather that falls across your whole screen and parts around your cursor.', layout: 'mood' },
-    Pets: { blurb: 'Company that wanders along your screen. Click it for a pat.', layout: 'wide' },
   };
 
   const params = new URLSearchParams(location.search);
@@ -107,9 +105,11 @@
   }
 
   // Artwork for a card: the item's own image, a stacked preview for chain charms (the lemon
-  // and chilies), the evil eye's glyph, or a line icon for weather.
+  // and chilies), or a glyph — the system emoji font renders these as full illustrations
+  // (not flat icons), so they read closer to real art than the plain line-icon fallback below,
+  // which now only fires for the rare item with neither an image nor a glyph.
   function artFor(item, stackScale = 0.8) {
-    const art = make('div', 'art');
+    const art = make('div', item.category === 'Atmosphere' ? 'art art-mini' : 'art');
 
     if (item.chain) {
       const stack = make('div', 'stack');
@@ -139,7 +139,7 @@
       img.loading = 'lazy';
       img.draggable = false;
       art.appendChild(img);
-    } else if (item.glyph && item.category === 'Charms') {
+    } else if (item.glyph) {
       art.appendChild(make('span', 'glyph', item.glyph));
     } else {
       art.appendChild(icon(ICONS[item.id] || 'leaf', 'ic icon'));

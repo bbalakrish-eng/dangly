@@ -522,7 +522,7 @@ async function applyItem(item) {
   }
 
   if (item.type === 'ritual') {
-    // Rituals (coconut-breaking, ash-gourd breaking, …) don't hang from
+    // Rituals (coconut-breaking, lamp/candle lighting, …) don't hang from
     // a string — they can be dragged freely, and a plain click (no drag)
     // triggers the ritual action. A `persistent` ignite ritual (the lamp)
     // is different: it's meant to just be lit the whole time it's
