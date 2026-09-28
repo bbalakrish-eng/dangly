@@ -82,14 +82,27 @@ button { font: inherit; color: inherit; }
   -webkit-app-region: drag;
 }
 .rail-mark {
+  position: relative;
   width: 24px;
   height: 24px;
   border-radius: 7px;
   margin-bottom: 8px;
-  background: var(--ink) radial-gradient(circle at 68% 30%, var(--lime) 0 3.5px, transparent 4px);
+  /* Same ring-on-a-string mark as the app icon and website logo, at rail scale. */
+  background: var(--ink) radial-gradient(circle at 50% 50%, var(--ink) 0 1.5px, var(--lime) 1.5px 4.4px, transparent 4.4px);
+}
+.rail-mark::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 1px;
+  height: calc(50% - 4.4px);
+  background: var(--lime);
+  transform: translateX(-50%);
 }
 .rail .tab,
-.rail .mode-toggle {
+.rail .mode-toggle,
+.rail .mute-toggle {
   -webkit-app-region: no-drag;
   width: 40px;
   height: 40px;
@@ -107,11 +120,17 @@ button { font: inherit; color: inherit; }
 }
 .rail .tab:hover { background: var(--card); color: var(--ink); }
 .rail .tab[aria-selected='true'] { background: var(--card-on); color: var(--accent-ink); }
-.rail .mode-toggle { margin-top: auto; color: var(--ink2); }
+.rail .mode-toggle { color: var(--ink2); }
 .rail .mode-toggle:hover { background: var(--card); color: var(--ink); }
 .mode-toggle .ic-moon { display: none; }
 :root[data-mode-resolved='dark'] .mode-toggle .ic-sun { display: none; }
 :root[data-mode-resolved='dark'] .mode-toggle .ic-moon { display: block; }
+
+.rail .mute-toggle { margin-top: auto; color: var(--ink2); }
+.rail .mute-toggle:hover { background: var(--card); color: var(--ink); }
+.mute-toggle .ic-sound-off { display: none; }
+.mute-toggle.muted .ic-sound-on { display: none; }
+.mute-toggle.muted .ic-sound-off { display: block; }
 
 .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 

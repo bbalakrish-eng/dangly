@@ -15,4 +15,9 @@ contextBridge.exposeInMainWorld('overlayAPI', {
   onAppearanceChanged: (callback) => {
     ipcRenderer.on('appearance:changed', (_event, itemId, overrides) => callback(itemId, overrides));
   },
+  getMuted: () => ipcRenderer.invoke('sound:get-muted'),
+  onMutedChanged: (callback) => {
+    ipcRenderer.on('sound:changed', (_event, muted) => callback(muted));
+  },
+  exitRage: () => ipcRenderer.send('rage:exit'),
 });

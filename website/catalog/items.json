@@ -335,6 +335,16 @@
       "glyph": "🐕",
       "pet": { "preset": "dog" },
       "ritual": { "label": "Give it a pat", "animation": "bounce" }
+    },
+    {
+      "id": "fire-blast",
+      "name": "Fire",
+      "origin": "Rage Room",
+      "category": "Rage Room",
+      "description": "Click anywhere on your screen to set it ablaze. Fades on its own after a few seconds.",
+      "type": "rage",
+      "glyph": "🔥",
+      "rage": { "effect": "fire" }
     }
   ]
 }

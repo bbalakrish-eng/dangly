@@ -15,6 +15,7 @@ const positionPuck = document.getElementById('positionPuck');
 const positionPuckGlyph = document.getElementById('positionPuckGlyph');
 const positionString = document.getElementById('positionString');
 const modeToggle = document.getElementById('modeToggle');
+const muteToggle = document.getElementById('muteToggle');
 const sizeSlider = document.getElementById('sizeSlider');
 const sizeValue = document.getElementById('sizeValue');
 const ropeSlider = document.getElementById('ropeSlider');
@@ -313,8 +314,28 @@ function initModeToggle() {
   });
 }
 
+/* ───────── Sound ─────────
+   One mute flag for every Rage Room sound effect, shared with the overlay via the main process
+   (see sound:get-muted/sound:set-muted/sound:changed) so a change here takes effect immediately
+   even if a Rage Room item is already active. */
+function applyMuted(muted) {
+  muteToggle.classList.toggle('muted', muted);
+  muteToggle.title = muted ? 'Unmute Rage Room sound effects' : 'Mute Rage Room sound effects';
+}
+
+async function initMuteToggle() {
+  applyMuted(await window.galleryAPI.getMuted());
+  muteToggle.addEventListener('click', () => {
+    const next = !muteToggle.classList.contains('muted');
+    window.galleryAPI.setMuted(next);
+    applyMuted(next);
+  });
+  window.galleryAPI.onMutedChanged(applyMuted);
+}
+
 async function init() {
   initModeToggle();
+  initMuteToggle();
   const [items, current] = await Promise.all([
     window.galleryAPI.getCatalog(),
     window.galleryAPI.getActiveItem(),

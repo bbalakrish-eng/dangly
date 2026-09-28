@@ -195,6 +195,26 @@ ipcMain.on('appearance:reset', (_event, itemId) => {
   notifyAppearanceChanged(itemId);
 });
 
+ipcMain.handle('sound:get-muted', () => settings.muted);
+ipcMain.on('sound:set-muted', (_event, muted) => {
+  settings.muted = muted;
+  saveSettings(settings);
+  // Both windows can care: the overlay to gate its own Rage Room sound
+  // effects, the gallery to keep its mute button in sync if it was toggled
+  // from... itself (it's the only place that can toggle it today, but this
+  // keeps the two from drifting if that changes).
+  if (overlayWindow) overlayWindow.webContents.send('sound:changed', muted);
+  if (galleryWindow) galleryWindow.webContents.send('sound:changed', muted);
+});
+
+// Rage Room items take over the whole screen's clicks (see renderer.js) —
+// Escape asks to leave that mode. Falls back to the first non-rage item
+// rather than "nothing selected", since the app has no real "empty" state.
+ipcMain.on('rage:exit', () => {
+  const fallback = catalog.find((item) => item.type !== 'rage') || catalog[0] || null;
+  setActiveItem(fallback);
+});
+
 ipcMain.handle('display:get-info', () => {
   const display = screen.getPrimaryDisplay();
   return { bounds: display.bounds, workArea: display.workArea };

@@ -58,6 +58,13 @@
     // window) — every charm just renders at the catalog's own defaults.
     getAppearance: async () => ({}),
     onAppearanceChanged: () => {},
+    // Rage Room: the stage is a normal page element (never click-through to
+    // begin with), so there's no "mode" to exit — Escape just re-selects
+    // nothing special here; sound stays unmuted since there's no settings
+    // panel on the site to host a mute toggle.
+    getMuted: async () => false,
+    onMutedChanged: () => {},
+    exitRage: () => {},
   };
 
   window.demoBridge = {

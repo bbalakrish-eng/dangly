@@ -8,6 +8,9 @@ const DEFAULTS = {
   // opacity, hang position), keyed by item id. A charm with no entry here
   // just renders at the catalog's own defaults.
   appearanceOverrides: {},
+  // Rage Room effects (gunshot, fire, ...) play a short synthesized sound;
+  // this mutes all of them at once.
+  muted: false,
 };
 
 function getSettingsPath() {

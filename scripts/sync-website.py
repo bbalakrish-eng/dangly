@@ -22,6 +22,7 @@ ENGINE_FILES = [
     "pet-presets.js",
     "pet-engine.js",
     "charm-physics.js",
+    "audio.js",
     "renderer.js",
 ]
 # Only what the site references: WebP art, plus the SVG the kitten rig is loaded from.

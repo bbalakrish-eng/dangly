@@ -7,6 +7,12 @@ const charmStringSvg = document.getElementById('charmString');
 const charmStringLine = document.getElementById('charmStringLine');
 const charmBeadsContainer = document.getElementById('charmBeads');
 const charmChainContainer = document.getElementById('charmChain');
+// Rage Room's full-screen click-capture layer — optional: a host page that
+// never offers Rage Room items (the small "Give it a flick" mini demo)
+// doesn't need to carry this markup, and every use below is null-guarded.
+const rageCatcher = document.getElementById('rageCatcher');
+const rageLayer = document.getElementById('rageLayer');
+const rageHint = document.getElementById('rageHint');
 
 let currentItem = null;
 let particleSystem = null;
@@ -25,6 +31,10 @@ let flameAnimationHandle = null;
 // while the settings window is open (see the 'appearance:changed' listener
 // near the bottom of this file) without tearing down/rebuilding the charm.
 let appearance = {};
+// Cached locally (rather than awaited fresh on every trigger) so a Rage
+// Room click can decide whether to play its sound synchronously, with no
+// round-trip lag between the click and the effect.
+let muted = false;
 
 function computeGroundY() {
   if (!displayInfo) return window.overlayHost.size().height - 60;
@@ -480,7 +490,7 @@ function teardownCurrent() {
     // A persistent flame (see performIgniteRitual) has no reset timeout
     // to clean this up — without cancelling here, its rAF loop would
     // keep running forever in the background after switching away.
-    cancelAnimationFrame(flameAnimationHandle);
+    flameAnimationHandle.cancel();
     flameAnimationHandle = null;
   }
   // The flame overlay and the shatter-photo overlay are both appended as
@@ -495,6 +505,7 @@ function teardownCurrent() {
   charm.classList.add('hidden');
   pet.classList.add('hidden');
   interactiveEl = null;
+  exitRageMode();
 }
 
 async function applyItem(item) {
@@ -555,16 +566,25 @@ async function applyItem(item) {
     petSystem = window.createPetSystem(pet, petGlyph, { ...(item.pet || {}), groundY: computeGroundY() });
     petSystem.start();
     interactiveEl = pet;
+    return;
+  }
+
+  if (item.type === 'rage') {
+    enterRageMode(item);
   }
 }
 
 async function init() {
   displayInfo = await window.overlayAPI.getDisplayInfo();
   const initialItem = await window.overlayAPI.getActiveItem();
+  muted = (await window.overlayAPI.getMuted?.()) ?? false;
   applyItem(initialItem);
 }
 
 window.overlayAPI.onItemChanged(applyItem);
+window.overlayAPI.onMutedChanged?.((next) => {
+  muted = next;
+});
 init();
 
 // A long display sleep can suspend this page's animation timers
@@ -628,6 +648,7 @@ let didDrag = false;
 let ritualDragOffset = { x: 0, y: 0 };
 
 function updateClickThrough(x, y) {
+  if (rageActive) return; // forced non-click-through for the whole window; see enterRageMode
   const el = document.elementFromPoint(x, y);
   const overInteractive = Boolean(interactiveEl && interactiveEl.contains(el));
   window.overlayAPI.setIgnoreMouseEvents(!overInteractive, { forward: true });
@@ -729,6 +750,18 @@ window.addEventListener('mouseup', (e) => {
   }
 });
 
+if (rageCatcher) {
+  rageCatcher.addEventListener('mousedown', (e) => {
+    if (!rageActive || !currentItem || currentItem.type !== 'rage') return;
+    const point = window.overlayHost.point(e);
+    if (currentItem.rage?.effect === 'fire') spawnFireBlast(point.x, point.y);
+  });
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && rageActive) window.overlayAPI.exitRage();
+});
+
 function performRitual() {
   if (currentItem?.type === 'charm' && charmPhysics) {
     charmPhysics.flick();
@@ -754,28 +787,12 @@ function performRitualAction(ritual) {
 
 let flameGradientCounter = 0;
 
-// A real animated flame + glow layered on top of a single static "unlit"
-// image, rather than swapping to a separate hand-drawn "lit" image. The
-// flicker is driven per-frame in JS as a sum of several non-harmonic sine
-// waves (different, unrelated frequencies) rather than a short CSS
-// @keyframes loop — a short loop visibly repeats itself; summing waves
-// that never share a common period reads as genuinely organic motion
-// that doesn't obviously cycle.
-function performIgniteRitual(ritual) {
-  const existing = charm.querySelector('.ritual-flame-wrap');
-  if (existing) existing.remove();
-  if (flameAnimationHandle) cancelAnimationFrame(flameAnimationHandle);
-  clearTimeout(breakResetTimer);
-
-  const anchor = ritual.flameAnchor || { xPct: 50, yPct: 25 };
-  const gradId = `flameGrad-${flameGradientCounter++}`;
-  const wrap = document.createElement('div');
-  wrap.className = 'ritual-flame-wrap';
-  wrap.style.left = `${anchor.xPct}%`;
-  wrap.style.top = `${anchor.yPct}%`;
-  wrap.innerHTML = `
-    <div class="ritual-flame-glow"></div>
-    <svg class="ritual-flame-svg" viewBox="0 0 40 90" width="${ritual.flameWidth || 34}" height="${ritual.flameHeight || 76}">
+// The flame's own SVG markup — shared by the lamp/candle ritual below and
+// by the Rage Room fire effect further down, so both draw literally the
+// same flame rather than two hand-tuned copies drifting apart over time.
+function flameSvgMarkup(gradId, width, height) {
+  return `
+    <svg class="ritual-flame-svg" viewBox="0 0 40 90" width="${width}" height="${height}">
       <defs>
         <radialGradient id="${gradId}" cx="50%" cy="72%" r="65%">
           <stop offset="0%" stop-color="#fffef2"/>
@@ -795,33 +812,146 @@ function performIgniteRitual(ritual) {
       <path d="M20,90 C11,78 9,63 11,49 C13,33 16,21 18,13 A5,6 0 0 0 22,13 C24,21 27,33 29,49 C31,63 29,78 20,90 Z" fill="url(#${gradId})" mask="url(#${gradId}-m)"/>
     </svg>
   `;
-  charm.appendChild(wrap);
-  requestAnimationFrame(() => wrap.classList.add('visible'));
+}
 
-  const flameSvg = wrap.querySelector('.ritual-flame-svg');
-  let flameStart = null;
-  function animateFlame(time) {
-    if (flameStart === null) flameStart = time;
-    const t = (time - flameStart) / 1000;
+// A real animated flame + glow layered on top of a single static "unlit"
+// image, rather than swapping to a separate hand-drawn "lit" image. The
+// flicker is driven per-frame in JS as a sum of several non-harmonic sine
+// waves (different, unrelated frequencies) rather than a short CSS
+// @keyframes loop — a short loop visibly repeats itself; summing waves
+// that never share a common period reads as genuinely organic motion
+// that doesn't obviously cycle. Returns a handle with its own `cancel()`
+// so callers don't need to know it's a rAF loop under the hood.
+function startFlameFlicker(flameSvg) {
+  let start = null;
+  let handle;
+  function tick(time) {
+    if (start === null) start = time;
+    const t = (time - start) / 1000;
     const scaleY = 1 + 0.07 * Math.sin(t * 7.3) + 0.04 * Math.sin(t * 13.1 + 1.7) + 0.03 * Math.sin(t * 4.7 + 0.6);
     const scaleX = 1 - 0.05 * Math.sin(t * 6.1 + 0.9) - 0.03 * Math.sin(t * 11.3 + 2.2);
     const skew = 3 * Math.sin(t * 3.3 + 0.3) + 2 * Math.sin(t * 8.9 + 1.1);
     const shiftX = 1.5 * Math.sin(t * 2.6 + 0.4);
     flameSvg.style.transform = `translateX(${shiftX}px) scaleX(${scaleX}) scaleY(${scaleY}) skewX(${skew}deg)`;
-    flameAnimationHandle = requestAnimationFrame(animateFlame);
+    handle = requestAnimationFrame(tick);
   }
-  flameAnimationHandle = requestAnimationFrame(animateFlame);
+  handle = requestAnimationFrame(tick);
+  return { cancel: () => cancelAnimationFrame(handle) };
+}
+
+function performIgniteRitual(ritual) {
+  const existing = charm.querySelector('.ritual-flame-wrap');
+  if (existing) existing.remove();
+  if (flameAnimationHandle) flameAnimationHandle.cancel();
+  clearTimeout(breakResetTimer);
+
+  const anchor = ritual.flameAnchor || { xPct: 50, yPct: 25 };
+  const gradId = `flameGrad-${flameGradientCounter++}`;
+  const wrap = document.createElement('div');
+  wrap.className = 'ritual-flame-wrap';
+  wrap.style.left = `${anchor.xPct}%`;
+  wrap.style.top = `${anchor.yPct}%`;
+  wrap.innerHTML = `<div class="ritual-flame-glow"></div>${flameSvgMarkup(gradId, ritual.flameWidth || 34, ritual.flameHeight || 76)}`;
+  charm.appendChild(wrap);
+  requestAnimationFrame(() => wrap.classList.add('visible'));
+
+  flameAnimationHandle = startFlameFlicker(wrap.querySelector('.ritual-flame-svg'));
 
   if (ritual.persistent) return; // stays lit for as long as the item is selected
 
   breakResetTimer = setTimeout(() => {
     wrap.classList.remove('visible');
     if (flameAnimationHandle) {
-      cancelAnimationFrame(flameAnimationHandle);
+      flameAnimationHandle.cancel();
       flameAnimationHandle = null;
     }
     setTimeout(() => wrap.remove(), 350);
   }, ritual.resetAfterMs || 3000);
+}
+
+// ───────── Rage Room ─────────
+// A fundamentally different interaction from every other item: those stay
+// click-through (the app gets out of your way), but "aim and click
+// anywhere on the screen" needs the opposite — the whole window has to stop
+// ignoring the mouse while one of these is active. rageCatcher is a plain
+// full-window element with pointer-events enabled just for this; leaving it
+// is what hands click-through back to the desktop underneath.
+let rageActive = false;
+
+function enterRageMode(item) {
+  rageActive = true;
+  if (rageCatcher) rageCatcher.classList.remove('hidden');
+  if (rageHint) {
+    rageHint.textContent = `${item.description || 'Click anywhere on your screen.'} Press Esc to exit.`;
+    rageHint.classList.remove('hidden');
+  }
+  // Forced on once, rather than left to the per-mousemove hover check in
+  // updateClickThrough (which now skips itself entirely while rage mode is
+  // active — see there) — every point on screen needs to be "interactive"
+  // here, not just the small area over a charm.
+  window.overlayAPI.setIgnoreMouseEvents(false);
+}
+
+function exitRageMode() {
+  if (!rageActive) return;
+  rageActive = false;
+  if (rageCatcher) rageCatcher.classList.add('hidden');
+  if (rageHint) rageHint.classList.add('hidden');
+  if (rageLayer) rageLayer.innerHTML = '';
+}
+
+let rageFireCounter = 0;
+
+// A scorch mark plus a rising flame plus a few soft smoke puffs, all
+// self-removing after a few seconds — this is the "self-cleaning" variant;
+// nothing here persists once its own timer fires.
+function spawnFireBlast(x, y) {
+  if (!rageLayer) return;
+  const gradId = `rageFlame-${rageFireCounter++}`;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'rage-fire';
+  wrap.style.left = `${x}px`;
+  wrap.style.top = `${y}px`;
+
+  const scorch = document.createElement('div');
+  scorch.className = 'rage-fire-scorch';
+  const scale = 0.85 + Math.random() * 0.3;
+  const rotate = Math.round(Math.random() * 360);
+  scorch.style.transform = `translate(-50%, -50%) rotate(${rotate}deg) scale(${scale})`;
+  wrap.appendChild(scorch);
+
+  // Reuses .ritual-flame-wrap verbatim (same class, same markup helper) so
+  // it inherits that class's own position/overlap/opacity-transition rules
+  // instead of restating them here.
+  const flameWrap = document.createElement('div');
+  flameWrap.className = 'ritual-flame-wrap';
+  flameWrap.innerHTML = `<div class="ritual-flame-glow"></div>${flameSvgMarkup(gradId, 34, 76)}`;
+  wrap.appendChild(flameWrap);
+
+  for (let i = 0; i < 4; i++) {
+    const puff = document.createElement('div');
+    puff.className = 'rage-fire-smoke';
+    puff.style.animationDelay = `${i * 220}ms`;
+    puff.style.setProperty('--drift', `${Math.round(-10 + Math.random() * 20)}px`);
+    wrap.appendChild(puff);
+  }
+
+  rageLayer.appendChild(wrap);
+  requestAnimationFrame(() => {
+    wrap.classList.add('visible');
+    flameWrap.classList.add('visible');
+  });
+
+  const flicker = startFlameFlicker(flameWrap.querySelector('.ritual-flame-svg'));
+
+  if (!muted) window.rageAudio?.playFireSound();
+
+  setTimeout(() => wrap.classList.add('fading'), 2100);
+  setTimeout(() => {
+    flicker.cancel();
+    wrap.remove();
+  }, 2700);
 }
 
 const easeOutCubic = (x) => 1 - Math.pow(1 - x, 3);
