@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="engine/overlay.css" />
   <!-- ?v= is a manual cache-buster: bump it (any change works, e.g. the date) whenever site.css
        changes, so a browser — or host — that cached the old file has to fetch the new one. -->
-  <link rel="stylesheet" href="site.css?v=14" />
+  <link rel="stylesheet" href="site.css?v=18" />
   <script>
     // Runs before first paint (inline, in <head>) so the page never flashes the wrong mode —
     // by the time site.css's [data-mode]/[data-mode-resolved] rules apply, this has already run.
@@ -47,15 +47,23 @@
           </div>
         </div>
 
-        <h1>Lucky charms<br />for your<span class="faces" id="faces" aria-hidden="true"></span><br />desktop.</h1>
+        <h1>Hang a little<br />luck on your<span class="faces" id="faces" aria-hidden="true"></span><br />desktop.</h1>
+
+        <div class="hero-ctas">
+          <a class="hero-cta-primary" href="#get">
+            <i><b class="ic" style="--i: url(icons/apple.svg)"></b></i>
+            Download for macOS
+            <b class="ic hero-cta-arrow" style="--i: url(icons/arrow-up-right.svg)"></b>
+          </a>
+          <a class="hero-cta-secondary" href="#replay">
+            <i><b class="ic" style="--i: url(icons/play.svg)"></b></i>
+            Watch demo
+          </a>
+        </div>
 
         <a class="scroll" href="#all">
-          <u></u>
           <span><i class="ic" style="--i: url(icons/arrow-down.svg)"></i>Scroll for everything</span>
-          <u></u>
         </a>
-
-        <p class="copy">Hang a charm from the top of your screen. Break a coconut, light a lamp, let it snow.</p>
       </section>
 
       <section class="right">

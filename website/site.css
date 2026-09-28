@@ -206,7 +206,9 @@ a:focus-visible, button:focus-visible {
 h1 {
   margin: clamp(32px, 9vh, 84px) 0 0;
   font-weight: 600;
-  font-size: clamp(2.8rem, 4.7vw, 4.6rem);
+  /* The 3-line "luck on your [faces]" headline is wider than the old one, so it runs a touch
+     smaller than the original 4.6rem cap to feel the same size. */
+  font-size: clamp(2.3rem, 4.3vw, 4.1rem);
   line-height: 1;
   letter-spacing: -0.045em;
 }
@@ -233,45 +235,93 @@ h1 {
 .faces i:first-child { margin-left: 0; }
 .faces img { height: 82%; object-fit: contain; }
 
-.scroll {
+/* Download + demo buttons, straight under the headline. */
+.hero-ctas {
   display: flex;
   align-items: center;
-  margin-top: clamp(22px, 4.5vh, 42px);
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  margin: 28px 0 28px;
+}
+.hero-cta-primary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 5.5px 21.5px 5.5px 5.5px;
+  border-radius: 999px;
+  /* Outlined: a white pill with a thin dark stroke, a dark circle badge and dark text, fixed
+     (not mode-dependent) so it reads the same on both the light and the dark page. */
+  background: #fff;
+  border: 1.5px solid var(--chip-ink);
+  color: var(--chip-ink);
+  font-size: 14.5px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: transform 0.15s var(--ease), box-shadow 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+/* On hover it flips to solid black: white text, white badge with a dark icon, white arrow. */
+.hero-cta-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(17, 19, 20, 0.16);
+  background: var(--chip-ink);
+  color: #fff;
+}
+.hero-cta-primary:hover i { background: #fff; color: var(--chip-ink); }
+.hero-cta-primary:hover .hero-cta-arrow { background: #fff; }
+.hero-cta-primary i {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--chip-ink);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.hero-cta-arrow { width: 15px; height: 15px; background: var(--chip-ink); margin-left: 2px; transition: background-color 0.2s ease; }
+.hero-cta-secondary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  font-size: 14.5px;
+  font-weight: 600;
   text-decoration: none;
 }
-.scroll u { flex: 1; border-top: 1.5px dashed rgba(17, 19, 20, 0.28); }
+.hero-cta-secondary i {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s ease;
+}
+.hero-cta-secondary .ic { width: 12px; height: 12px; }
+.hero-cta-secondary:hover i { border-color: var(--ink); }
+
+/* Scroll hint, pinned to the bottom-left of the hero column (.left is a flex column, so the auto
+   margin takes up the free space above it). Dashed edge uses --ink3 so it shows in dark mode too. */
+.scroll {
+  align-self: flex-start;
+  margin-top: auto;
+  text-decoration: none;
+}
 .scroll span {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 9px 18px;
-  margin: 0 10px;
-  border: 1.5px dashed rgba(17, 19, 20, 0.28);
+  border: 1.5px dashed var(--ink3);
   border-radius: 999px;
   font-size: 13px;
   color: var(--ink2);
   transition: color 0.2s ease, border-color 0.2s ease;
 }
-.scroll:hover span { color: var(--ink); border-color: rgba(17, 19, 20, 0.6); }
+.scroll:hover span { color: var(--ink); border-color: var(--ink2); }
 .scroll .ic { font-size: 15px; }
-
-.copy {
-  margin: auto 0 0;
-  display: flex;
-  gap: 12px;
-  max-width: 290px;
-  font-size: 12.5px;
-  line-height: 1.45;
-  font-weight: 500;
-}
-.copy::before {
-  content: '';
-  flex: none;
-  width: 9px;
-  height: 9px;
-  margin-top: 3px;
-  background: var(--lime);
-}
 
 /* ───────── Stage ───────── */
 .right { position: relative; min-width: 0; }
@@ -710,8 +760,8 @@ body[data-theme='wallpaper'] .vert { top: 46px; }
 .foot > div, .foot-ctas { position: relative; z-index: 1; }
 .foot h2 { margin: 0; font-size: clamp(2.1rem, 3.6vw, 3.4rem); font-weight: 600; letter-spacing: -0.04em; line-height: 1.05; }
 .foot p { margin: 12px 0 0; color: rgba(255, 255, 255, 0.78); font-size: 16px; }
-.foot .get-dark { background: #fff; color: var(--chip-ink); flex: none; }
-.foot .get-dark i { background: var(--chip-ink); color: #fff; }
+.foot .get-dark { background: var(--lime); color: var(--chip-ink); flex: none; }
+.foot .get-dark i { background: var(--chip-ink); color: var(--lime); }
 
 /* A big, mostly-hidden echo of the logo mark itself (same rounded-square-plus-dot shape,
    scaled way up and faded into the corner) — a quiet brand flourish rather than another loud
@@ -792,7 +842,6 @@ body[data-theme='wallpaper'] .vert { top: 46px; }
   .hero { height: auto; min-height: 0; }
   .frame { grid-template-columns: 1fr; height: auto; }
   .left { padding: 4px 14px 24px; }
-  .copy { margin-top: 24px; }
   .right { height: 620px; }
   .grid.charms, .grid.wide, .grid.mood { grid-template-columns: repeat(2, 1fr); }
   .why-grid { grid-template-columns: repeat(2, 1fr); row-gap: 26px; }
@@ -826,6 +875,9 @@ body[data-theme='wallpaper'] .vert { top: 46px; }
   /* The thumbnail tray (3 cards + pager) is sized for the desktop stage; at phone widths the
      stage itself is only ~300-340px wide, and .stage clips overflow-x, so without this the
      "next" arrow and part of a card render entirely outside the visible/clickable area. */
+  /* Smaller charm faces so "luck on your" + the faces fit on one line at phone width. */
+  .faces { margin-left: 8px; }
+  .faces i { width: 36px; height: 36px; margin-left: -11px; border-width: 2px; }
   .n-bl { padding: 12px 14px 12px 0; }
   .cards { gap: 6px; }
   .tray-card { width: 78px; height: 108px; padding: 8px 6px 28px; }
