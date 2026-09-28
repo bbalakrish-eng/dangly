@@ -22,13 +22,15 @@ DOT_RADIUS_RATIO = 5 / 36
 SUPERSAMPLE = 8
 
 
-def render_mark(size):
+def render_mark(size, corner_ratio=CORNER_RATIO):
     hi = size * SUPERSAMPLE
     img = Image.new("RGBA", (hi, hi), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
-    corner = CORNER_RATIO * hi
-    draw.rounded_rectangle([0, 0, hi - 1, hi - 1], radius=corner, fill=INK)
+    if corner_ratio > 0:
+        draw.rounded_rectangle([0, 0, hi - 1, hi - 1], radius=corner_ratio * hi, fill=INK)
+    else:
+        draw.rectangle([0, 0, hi - 1, hi - 1], fill=INK)
 
     cx = DOT_CX_RATIO * hi
     cy = DOT_CY_RATIO * hi
@@ -65,8 +67,8 @@ def render_tray_template(size):
     return Image.composite(black, transparent, mask)
 
 
-def write(path, size):
-    render_mark(size).save(path)
+def write(path, size, corner_ratio=CORNER_RATIO):
+    render_mark(size, corner_ratio).save(path)
     print(f"wrote {path} ({size}x{size})")
 
 
@@ -85,7 +87,17 @@ if __name__ == "__main__":
     # General app icon — electron-builder derives .icns/.ico from a single
     # large square PNG; 1024 is its recommended source size. Always full
     # color — only the menu-bar tray icon follows the template convention.
-    write(os.path.join(assets, "icon.png"), 1024)
+    #
+    # Full-bleed square, corner_ratio=0 — NOT the website mark's own rounded
+    # corner. Since macOS Big Sur, the OS clips every third-party app icon to
+    # its own rounded-square template and adds the drop shadow itself; it
+    # expects a full-bleed square to clip. Baking in our own (more aggressive,
+    # 30.6%-radius) rounding left our shape's corners short of the OS's own
+    # clip region, so Finder's white background showed through that gap as a
+    # thin white border around the icon. A flat square has no corner for that
+    # gap to appear in — same fix Apple's own HIG asks third-party icons to
+    # follow, and how every other Mac app icon avoids this exact artifact.
+    write(os.path.join(assets, "icon.png"), 1024, corner_ratio=0)
 
     # Menu-bar tray icon, as a macOS template image. The "Template" in the
     # filename is Electron/AppKit's own convention for auto-detecting and
