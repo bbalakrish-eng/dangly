@@ -12,10 +12,13 @@ import os
 
 from PIL import Image, ImageDraw, ImageFont
 
-INK = (0x11, 0x13, 0x14)
+# The page background — deliberately NOT the same near-black as the app
+# icon's own body: on a pure-black background the black icon had no edge to
+# read against and visually merged into it. A mid gray gives it something
+# to sit on top of.
+BG = (0x3A, 0x3D, 0x40)
 LIME = (0xBD, 0xEA, 0x3F)
-WHITE = (0xF2, 0xF3, 0xF1)
-MUTED = (0xA3, 0xA9, 0xA2)
+MUTED = (0xC7, 0xCA, 0xCC)
 
 SCALE = 2  # exported at @2x for a crisp look on Retina displays
 WIDTH, HEIGHT = 660, 420  # @1x window size — keep in sync with package.json
@@ -30,37 +33,30 @@ def font(size):
     return ImageFont.truetype(FONT_PATH, size * SCALE)
 
 
-def draw_ring(draw, cx, cy, outer, inner, line_len):
-    lw = max(2, outer * 0.24)
-    draw.rectangle([cx - lw / 2, cy - outer - line_len, cx + lw / 2, cy - outer + 2], fill=LIME)
-    draw.ellipse([cx - outer, cy - outer, cx + outer, cy + outer], fill=LIME)
-    draw.ellipse([cx - inner, cy - inner, cx + inner, cy + inner], fill=INK)
-
-
 def main():
     root = os.path.join(os.path.dirname(__file__), "..")
     assets = os.path.join(root, "assets")
 
     w, h = WIDTH * SCALE, HEIGHT * SCALE
-    img = Image.new("RGB", (w, h), INK)
+    img = Image.new("RGB", (w, h), BG)
     draw = ImageDraw.Draw(img)
 
-    # Small ring mark + wordmark near the top, the same "brand corner" every
-    # other surface (app icon, website, settings window) carries.
-    mark_cx, mark_cy = w / 2 - 46 * SCALE, 44 * SCALE
-    draw_ring(draw, mark_cx, mark_cy, 9 * SCALE, 3.2 * SCALE, 11 * SCALE)
-    wordmark_font = font(19)
-    draw.text((mark_cx + 20 * SCALE, mark_cy - 13 * SCALE), "Dangly", font=wordmark_font, fill=WHITE)
+    # No logo/wordmark here — Finder already prints the app's own filename
+    # ("Dangly") as a label right under its icon, so one drawn into the
+    # background up top was just a redundant second copy of the same name.
 
-    # A clean solid arrow from the app icon to the Applications alias —
-    # electron-builder's own default background is a faint dashed arrow with
-    # no text, easy to miss if you don't already know the drag-to-install
-    # convention. This is deliberately bolder and paired with a caption.
+    # A short, sleek arrow centered between the two icons — electron-builder's
+    # own default background is a faint dashed arrow with no text, easy to
+    # miss if you don't already know the drag-to-install convention; this is
+    # paired with a caption below, so the arrow itself doesn't need to be
+    # bold or span the whole gap to do its job.
     arrow_y = APP_Y * SCALE
-    arrow_x1 = (APP_X + 68) * SCALE
-    arrow_x2 = (LINK_X - 68) * SCALE
-    head = 16 * SCALE
-    shaft_w = 5 * SCALE
+    gap_center = (APP_X + LINK_X) / 2 * SCALE
+    arrow_half = 42 * SCALE
+    arrow_x1 = gap_center - arrow_half
+    arrow_x2 = gap_center + arrow_half
+    head = 11 * SCALE
+    shaft_w = 3 * SCALE
     draw.rectangle([arrow_x1, arrow_y - shaft_w / 2, arrow_x2 - head, arrow_y + shaft_w / 2], fill=LIME)
     draw.polygon(
         [(arrow_x2 - head, arrow_y - head), (arrow_x2, arrow_y), (arrow_x2 - head, arrow_y + head)],
