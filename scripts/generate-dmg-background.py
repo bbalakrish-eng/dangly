@@ -12,13 +12,18 @@ import os
 
 from PIL import Image, ImageDraw, ImageFont
 
-# The page background — deliberately NOT the same near-black as the app
-# icon's own body: on a pure-black background the black icon had no edge to
-# read against and visually merged into it. A mid gray gives it something
-# to sit on top of.
-BG = (0x3A, 0x3D, 0x40)
-LIME = (0xBD, 0xEA, 0x3F)
-MUTED = (0xC7, 0xCA, 0xCC)
+# Light, not dark: Finder renders the "Dangly"/"Applications" labels under
+# each icon in fixed dark text — that's controlled by Finder itself and a
+# darker background color hint in .DS_Store made no difference, so rather
+# than fight it, the background just needs to be light enough for dark text
+# to read on its own. This also solves the original complaint (the app's own
+# black icon blending into a dark background) the same way: dark-on-light
+# reads clearly regardless of which element is dark.
+BG = (0xE7, 0xE8, 0xEA)
+LIME = (0x6F, 0x9A, 0x1E)  # darker/more saturated than the brand lime — the
+# bright UI lime reads fine on near-black but washes out too pale on this
+# light a background to still look like a deliberate, visible arrow.
+MUTED = (0x54, 0x58, 0x5C)
 
 SCALE = 2  # exported at @2x for a crisp look on Retina displays
 WIDTH, HEIGHT = 660, 420  # @1x window size — keep in sync with package.json
