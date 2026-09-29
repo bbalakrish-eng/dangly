@@ -139,9 +139,15 @@ def write_finder_view(mount_point, volume_icon):
     icvp = {
         "viewOptionsVersion": 1,
         "backgroundType": 2,
-        "backgroundColorRed": 1.0,
-        "backgroundColorGreen": 1.0,
-        "backgroundColorBlue": 1.0,
+        # Finder picks the icon label text color (black vs. white) from
+        # these RGB fields, not from actually looking at the background
+        # image — leaving them at white (the default/dmgbuild's own
+        # template value) is why "Dangly"/"Applications" rendered in
+        # unreadable dark text over our actual dark-gray background. Must
+        # stay in sync with BG in generate-dmg-background.py.
+        "backgroundColorRed": 0x3A / 255,
+        "backgroundColorGreen": 0x3D / 255,
+        "backgroundColorBlue": 0x40 / 255,
         "backgroundImageAlias": alias.to_bytes(),
         "gridOffsetX": 0.0,
         "gridOffsetY": 0.0,
