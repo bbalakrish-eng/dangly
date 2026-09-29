@@ -28,6 +28,9 @@
       <button type="button" class="tab" id="tabBtnAppearance" role="tab" aria-selected="false" title="Appearance">
         <i class="ic" style="--i: url(icons/sliders-horizontal.svg)"></i>
       </button>
+      <button type="button" class="tab" id="tabBtnSettings" role="tab" aria-selected="false" title="Settings">
+        <i class="ic" style="--i: url(icons/gear.svg)"></i>
+      </button>
       <button type="button" class="mute-toggle" id="muteToggle" title="Mute Rage Room sound effects">
         <i class="ic ic-sound-on" style="--i: url(icons/speaker-high.svg)"></i>
         <i class="ic ic-sound-off" style="--i: url(icons/speaker-slash.svg)"></i>
@@ -104,6 +107,40 @@
           </label>
 
           <button type="button" id="resetAppearance" class="reset-button">Reset to default</button>
+        </div>
+      </section>
+
+      <section id="panelSettings" class="panel hidden">
+        <header>
+          <h1>Settings</h1>
+          <p>App-wide preferences.</p>
+        </header>
+
+        <div class="settings-body">
+          <div class="settings-section">
+            <h2>Updates</h2>
+            <div class="settings-row">
+              <div class="settings-row-text">
+                <span class="settings-row-label">Dangly <span id="appVersion">—</span></span>
+                <span class="settings-row-hint" id="updateStatus">Checks only when you ask.</span>
+              </div>
+              <button type="button" id="checkUpdatesBtn" class="reset-button">Check for updates</button>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h2>Behavior</h2>
+            <label class="settings-row">
+              <div class="settings-row-text">
+                <span class="settings-row-label">Hide while a video plays full screen</span>
+                <span class="settings-row-hint">Charms and effects disappear automatically, then come back when you exit full screen.</span>
+              </div>
+              <span class="switch">
+                <input type="checkbox" id="hideOnFullscreenToggle" />
+                <span class="switch-track" aria-hidden="true"></span>
+              </span>
+            </label>
+          </div>
         </div>
       </section>
     </div>

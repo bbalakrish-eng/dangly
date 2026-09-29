@@ -11,6 +11,9 @@ const DEFAULTS = {
   // Rage Room effects (gunshot, fire, ...) play a short synthesized sound;
   // this mutes all of them at once.
   muted: false,
+  // See fullscreen-watcher.js — polls for some other app's window filling
+  // the whole screen and hides the overlay for as long as that's true.
+  hideOnFullscreenVideo: false,
 };
 
 function getSettingsPath() {

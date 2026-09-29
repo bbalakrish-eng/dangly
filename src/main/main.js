@@ -6,6 +6,8 @@ const { createTray } = require('./tray');
 const { createGalleryWindow } = require('./gallery-window');
 const { loadCatalog } = require('../shared/catalog');
 const { loadSettings, saveSettings } = require('./store');
+const { initUpdater, checkForUpdates } = require('./updater');
+const fullscreenWatcher = require('./fullscreen-watcher');
 
 const TOGGLE_VISIBILITY_SHORTCUT = 'Control+Shift+D';
 
@@ -14,14 +16,48 @@ let galleryWindow = null;
 let catalog = [];
 let settings = null;
 let trayHandle = null;
+// True only while the overlay is hidden *because* of the fullscreen
+// watcher, not because the user hid it themselves via the shortcut/tray —
+// only that case should auto-show again once fullscreen ends.
+let autoHiddenForFullscreen = false;
 
 function toggleOverlayVisibility() {
+  // A manual toggle always overrides the watcher's own bookkeeping — without
+  // this, hiding fullscreen-in-play → un-hiding by hand → then leaving
+  // fullscreen would hide it again (the watcher still thinks it owns it).
+  autoHiddenForFullscreen = false;
   if (overlayWindow.isVisible()) {
     overlayWindow.hide();
   } else {
     overlayWindow.show();
   }
   trayHandle.syncShowToggle(overlayWindow.isVisible());
+}
+
+// Starts/stops the poll loop to match the setting, and folds a toggle-off
+// back to visible immediately rather than leaving the overlay stuck hidden
+// until the next fullscreen transition happens to fire.
+function syncFullscreenWatcher() {
+  if (settings.hideOnFullscreenVideo) {
+    fullscreenWatcher.start((isFullscreen) => {
+      if (!overlayWindow || overlayWindow.isDestroyed()) return;
+      if (isFullscreen) {
+        if (overlayWindow.isVisible()) {
+          overlayWindow.hide();
+          autoHiddenForFullscreen = true;
+        }
+      } else if (autoHiddenForFullscreen) {
+        overlayWindow.show();
+        autoHiddenForFullscreen = false;
+      }
+    });
+  } else {
+    fullscreenWatcher.stop();
+    if (autoHiddenForFullscreen && overlayWindow && !overlayWindow.isDestroyed()) {
+      overlayWindow.show();
+      autoHiddenForFullscreen = false;
+    }
+  }
 }
 
 // The saved selection is a full copy of the item as it was when picked, so
@@ -164,6 +200,13 @@ app.whenReady().then(() => {
   if (!registered) {
     console.error(`Failed to register global shortcut: ${TOGGLE_VISIBILITY_SHORTCUT}`);
   }
+
+  initUpdater((status) => {
+    if (galleryWindow && !galleryWindow.isDestroyed()) {
+      galleryWindow.webContents.send('updates:status', status);
+    }
+  });
+  syncFullscreenWatcher();
 });
 
 app.on('window-all-closed', () => {
@@ -222,4 +265,14 @@ ipcMain.handle('display:get-info', () => {
 
 ipcMain.handle('assets:resolve', (_event, relativePath) => {
   return pathToFileURL(path.join(app.getAppPath(), relativePath)).href;
+});
+
+ipcMain.handle('app:get-version', () => app.getVersion());
+ipcMain.handle('updates:check', () => checkForUpdates());
+
+ipcMain.handle('settings:get-hide-on-fullscreen', () => settings.hideOnFullscreenVideo);
+ipcMain.on('settings:set-hide-on-fullscreen', (_event, value) => {
+  settings.hideOnFullscreenVideo = value;
+  saveSettings(settings);
+  syncFullscreenWatcher();
 });

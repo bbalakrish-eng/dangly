@@ -16,6 +16,9 @@
     "electron": "^33.0.0",
     "electron-builder": "^25.0.0"
   },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  },
   "build": {
     "appId": "com.dangly.app",
     "productName": "Dangly",
@@ -27,6 +30,11 @@
     ],
     "directories": {
       "output": "dist"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "bbalakrish-eng",
+      "repo": "dangly"
     },
     "mac": {
       "icon": "assets/icon.png",

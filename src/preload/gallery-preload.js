@@ -13,4 +13,11 @@ contextBridge.exposeInMainWorld('galleryAPI', {
   onMutedChanged: (callback) => {
     ipcRenderer.on('sound:changed', (_event, muted) => callback(muted));
   },
+  getAppVersion: () => ipcRenderer.invoke('app:get-version'),
+  checkForUpdates: () => ipcRenderer.invoke('updates:check'),
+  onUpdateStatus: (callback) => {
+    ipcRenderer.on('updates:status', (_event, status) => callback(status));
+  },
+  getHideOnFullscreen: () => ipcRenderer.invoke('settings:get-hide-on-fullscreen'),
+  setHideOnFullscreen: (value) => ipcRenderer.send('settings:set-hide-on-fullscreen', value),
 });

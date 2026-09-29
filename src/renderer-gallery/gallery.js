@@ -4,8 +4,15 @@ const useCustomBtn = document.getElementById('useCustom');
 
 const tabBtnLibrary = document.getElementById('tabBtnLibrary');
 const tabBtnAppearance = document.getElementById('tabBtnAppearance');
+const tabBtnSettings = document.getElementById('tabBtnSettings');
 const panelLibrary = document.getElementById('panelLibrary');
 const panelAppearance = document.getElementById('panelAppearance');
+const panelSettings = document.getElementById('panelSettings');
+
+const appVersionEl = document.getElementById('appVersion');
+const updateStatusEl = document.getElementById('updateStatus');
+const checkUpdatesBtn = document.getElementById('checkUpdatesBtn');
+const hideOnFullscreenToggle = document.getElementById('hideOnFullscreenToggle');
 
 const appearanceEmpty = document.getElementById('appearanceEmpty');
 const appearanceControls = document.getElementById('appearanceControls');
@@ -154,18 +161,20 @@ useCustomBtn.addEventListener('click', () => {
 /* ───────── Tabs ───────── */
 
 function selectTab(tab) {
-  const onLibrary = tab === 'library';
-  tabBtnLibrary.setAttribute('aria-selected', String(onLibrary));
-  tabBtnAppearance.setAttribute('aria-selected', String(!onLibrary));
-  panelLibrary.classList.toggle('hidden', !onLibrary);
-  panelAppearance.classList.toggle('hidden', onLibrary);
+  tabBtnLibrary.setAttribute('aria-selected', String(tab === 'library'));
+  tabBtnAppearance.setAttribute('aria-selected', String(tab === 'appearance'));
+  tabBtnSettings.setAttribute('aria-selected', String(tab === 'settings'));
+  panelLibrary.classList.toggle('hidden', tab !== 'library');
+  panelAppearance.classList.toggle('hidden', tab !== 'appearance');
+  panelSettings.classList.toggle('hidden', tab !== 'settings');
   // Refreshed on every visit rather than cached, in case the Library tab
   // switched charms since Appearance was last open.
-  if (!onLibrary) loadAppearanceFor(activeItem);
+  if (tab === 'appearance') loadAppearanceFor(activeItem);
 }
 
 tabBtnLibrary.addEventListener('click', () => selectTab('library'));
 tabBtnAppearance.addEventListener('click', () => selectTab('appearance'));
+tabBtnSettings.addEventListener('click', () => selectTab('settings'));
 
 /* ───────── Appearance ───────── */
 
@@ -333,9 +342,58 @@ async function initMuteToggle() {
   window.galleryAPI.onMutedChanged(applyMuted);
 }
 
+/* ───────── Settings: updates ─────────
+   Manual only — nothing downloads until the user presses the button. See
+   updater.js: a found update downloads and installs itself from there
+   without a second click, this just reflects each step of that back. */
+function applyUpdateStatus(status) {
+  switch (status.state) {
+    case 'checking':
+      updateStatusEl.textContent = 'Checking for updates…';
+      checkUpdatesBtn.disabled = true;
+      break;
+    case 'available':
+      updateStatusEl.textContent = `Downloading version ${status.version}…`;
+      break;
+    case 'downloading':
+      updateStatusEl.textContent = `Downloading update… ${status.percent}%`;
+      break;
+    case 'downloaded':
+      updateStatusEl.textContent = 'Update ready — restarting…';
+      break;
+    case 'not-available':
+      updateStatusEl.textContent = "You're on the latest version.";
+      checkUpdatesBtn.disabled = false;
+      break;
+    case 'error':
+      updateStatusEl.textContent = status.message || "Couldn't check for updates.";
+      checkUpdatesBtn.disabled = false;
+      break;
+  }
+}
+
+async function initUpdates() {
+  appVersionEl.textContent = await window.galleryAPI.getAppVersion();
+  window.galleryAPI.onUpdateStatus(applyUpdateStatus);
+  checkUpdatesBtn.addEventListener('click', () => {
+    applyUpdateStatus({ state: 'checking' });
+    window.galleryAPI.checkForUpdates();
+  });
+}
+
+/* ───────── Settings: hide on full-screen video ───────── */
+async function initFullscreenToggle() {
+  hideOnFullscreenToggle.checked = await window.galleryAPI.getHideOnFullscreen();
+  hideOnFullscreenToggle.addEventListener('change', () => {
+    window.galleryAPI.setHideOnFullscreen(hideOnFullscreenToggle.checked);
+  });
+}
+
 async function init() {
   initModeToggle();
   initMuteToggle();
+  initUpdates();
+  initFullscreenToggle();
   const [items, current] = await Promise.all([
     window.galleryAPI.getCatalog(),
     window.galleryAPI.getActiveItem(),
