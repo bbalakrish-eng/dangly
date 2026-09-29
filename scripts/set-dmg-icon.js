@@ -7,6 +7,13 @@
 // icon file's own icon resource into itself, DeRez reads that resource back
 // out, Rez appends it onto the target file, and SetFile flips the "has a
 // custom icon" flag Finder checks.
+//
+// Uses assets/dmg-file-icon.icns (see generate-dmg-file-icon.py), NOT the
+// app's own full-bleed icon.icns — a plain file gets no automatic OS
+// rounding/shadow the way an installed .app does, so using the flat
+// full-bleed icon here showed up as a hard-edged square. The dmg-file-icon
+// variant bakes the rounded corners and a drop shadow in directly, so it
+// still reads as "the app icon" without looking flat.
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 const os = require('os');
@@ -18,9 +25,9 @@ module.exports = async function setDmgIcon(buildResult) {
   const dmgPaths = (buildResult.artifactPaths || []).filter((p) => p.endsWith('.dmg'));
   if (dmgPaths.length === 0) return [];
 
-  const iconIcns = path.join(buildResult.outDir, '.icon-icns', 'icon.icns');
+  const iconIcns = path.join(__dirname, '..', 'assets', 'dmg-file-icon.icns');
   if (!fs.existsSync(iconIcns)) {
-    console.warn(`set-dmg-icon: ${iconIcns} not found, skipping custom .dmg icon`);
+    console.warn(`set-dmg-icon: ${iconIcns} not found — run npm run generate-dmg-file-icon, skipping`);
     return [];
   }
 

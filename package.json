@@ -10,6 +10,7 @@
     "start": "electron .",
     "generate-icons": "python3 scripts/generate-icons.py",
     "generate-dmg-background": "python3 scripts/generate-dmg-background.py",
+    "generate-dmg-file-icon": "python3 scripts/generate-dmg-file-icon.py",
     "package:mac": "electron-builder --mac",
     "package:win": "electron-builder --win"
   },
