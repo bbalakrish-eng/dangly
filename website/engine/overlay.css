@@ -274,3 +274,18 @@
   pointer-events: none;
   z-index: 5;
 }
+
+/* The flash/sparks are drawn on #effects (canvas, see spawnBulletHole in
+   renderer.js) — this is just the punched-hole-plus-cracks decal left
+   behind, fading a few seconds after the flash itself is already gone. */
+.rage-bullet-hole {
+  position: absolute;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.rage-bullet-hole.visible {
+  opacity: 1;
+}
+.rage-bullet-hole.fading {
+  opacity: 0;
+}

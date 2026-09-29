@@ -345,6 +345,16 @@
       "type": "rage",
       "glyph": "🔥",
       "rage": { "effect": "fire" }
+    },
+    {
+      "id": "gunshot",
+      "name": "Gunshot",
+      "origin": "Rage Room",
+      "category": "Rage Room",
+      "description": "Click anywhere on your screen to put a bullet hole in it. Fades on its own after a few seconds.",
+      "type": "rage",
+      "glyph": "🔫",
+      "rage": { "effect": "bullet" }
     }
   ]
 }

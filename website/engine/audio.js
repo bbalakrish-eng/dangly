@@ -56,5 +56,58 @@
     noise.stop(now + duration);
   }
 
-  window.rageAudio = { playFireSound };
+  // A sharp noise "crack" plus a short low "thud" underneath it for body —
+  // unlike playFireSound above, a near-instant attack is exactly right
+  // here: that hard transient is what actually reads as a gunshot, not
+  // something to soften.
+  function playGunshotSound() {
+    const ac = getContext();
+    const duration = 0.28;
+    const now = ac.currentTime;
+
+    const bufferSize = Math.floor(ac.sampleRate * duration);
+    const buffer = ac.createBuffer(1, bufferSize, ac.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 0.7);
+    }
+
+    const noise = ac.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = ac.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.Q.value = 0.5;
+    filter.frequency.setValueAtTime(4500, now);
+    filter.frequency.exponentialRampToValueAtTime(400, now + duration);
+
+    const gain = ac.createGain();
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.55, now + 0.006);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(ac.destination);
+    noise.start(now);
+    noise.stop(now + duration);
+
+    const thumpDuration = 0.16;
+    const thump = ac.createOscillator();
+    thump.type = 'sine';
+    thump.frequency.setValueAtTime(150, now);
+    thump.frequency.exponentialRampToValueAtTime(45, now + 0.12);
+
+    const thumpGain = ac.createGain();
+    thumpGain.gain.setValueAtTime(0.0001, now);
+    thumpGain.gain.exponentialRampToValueAtTime(0.5, now + 0.008);
+    thumpGain.gain.exponentialRampToValueAtTime(0.0001, now + thumpDuration);
+
+    thump.connect(thumpGain);
+    thumpGain.connect(ac.destination);
+    thump.start(now);
+    thump.stop(now + thumpDuration);
+  }
+
+  window.rageAudio = { playFireSound, playGunshotSound };
 })();

@@ -763,6 +763,7 @@ if (rageCatcher) {
     rageMouseDown = true;
     const point = window.overlayHost.point(e);
     if (currentItem.rage?.effect === 'fire') spawnFireBlast(point.x, point.y);
+    if (currentItem.rage?.effect === 'bullet') spawnBulletHole(point.x, point.y);
   });
 
   // Continuous drag trail: while the button stays down, keep spawning a
@@ -918,18 +919,18 @@ function exitRageMode() {
   if (rageCatcher) rageCatcher.classList.add('hidden');
   if (rageHint) rageHint.classList.add('hidden');
   if (rageLayer) rageLayer.innerHTML = '';
-  stopFireLoop();
+  stopRageParticles();
 }
 
-// A real particle burn, not a fixed vector flame shape — dozens of small
-// glowing circles with randomized size/speed/color, composited with
-// 'screen' so overlapping ones brighten each other instead of just
-// stacking flat, read as an organic, irregular flame far better than any
-// single fixed path could. Sparks are just a second, smaller/faster/
-// shorter-lived batch of the same particle — no separate system needed.
-// (Technique adapted from a canvas fire demo the user linked — see the
-// commit message for the source — not the ritual flame's SVG-path model.)
-class FireParticle {
+// Shared by every Rage Room effect that needs a burst of glowing motion —
+// Fire's flame/sparks and the bullet hole's muzzle flash all push into the
+// same pool below rather than each keeping its own particle system. Dozens
+// of small glowing circles with randomized size/speed/color, composited
+// with 'screen' so overlapping ones brighten each other instead of just
+// stacking flat, read as organic and irregular far better than any single
+// fixed shape could. (Technique adapted from a canvas fire demo the user
+// linked — see the commit message for the source.)
+class RageParticle {
   constructor(x, y, opts = {}) {
     this.x = x + (Math.random() * 30 - 15);
     this.y = y + (Math.random() * 10 - 5);
@@ -972,42 +973,42 @@ class FireParticle {
   }
 }
 
-let fireParticles = [];
-let fireFrame = 0;
-let fireLoopHandle = null;
+let rageParticles = [];
+let rageFrame = 0;
+let rageLoopHandle = null;
 
 // Runs only while there's actually something to draw — started on the
 // first spark of a burst, and left to stop itself once every particle in
 // it has fully decayed, rather than a fixed-duration timer that has to
 // guess how long that will take.
-function ensureFireLoop() {
-  if (fireLoopHandle) return;
+function ensureRageParticleLoop() {
+  if (rageLoopHandle) return;
   const ctx = canvas.getContext('2d');
   function tick() {
-    fireFrame++;
+    rageFrame++;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
-    for (let i = 0; i < fireParticles.length; i++) {
-      const p = fireParticles[i];
-      p.update(fireFrame);
+    for (let i = 0; i < rageParticles.length; i++) {
+      const p = rageParticles[i];
+      p.update(rageFrame);
       p.draw(ctx);
     }
     ctx.restore();
-    fireParticles = fireParticles.filter((p) => !p.dead());
-    if (fireParticles.length > 0) {
-      fireLoopHandle = requestAnimationFrame(tick);
+    rageParticles = rageParticles.filter((p) => !p.dead());
+    if (rageParticles.length > 0) {
+      rageLoopHandle = requestAnimationFrame(tick);
     } else {
-      fireLoopHandle = null;
+      rageLoopHandle = null;
     }
   }
-  fireLoopHandle = requestAnimationFrame(tick);
+  rageLoopHandle = requestAnimationFrame(tick);
 }
 
-function stopFireLoop() {
-  if (fireLoopHandle) cancelAnimationFrame(fireLoopHandle);
-  fireLoopHandle = null;
-  fireParticles = [];
+function stopRageParticles() {
+  if (rageLoopHandle) cancelAnimationFrame(rageLoopHandle);
+  rageLoopHandle = null;
+  rageParticles = [];
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
@@ -1016,7 +1017,7 @@ function stopFireLoop() {
 // no lingering scorch/burn decal after it decays, just the fire itself.
 function spawnFireBlast(x, y) {
   for (let i = 0; i < 22; i++) {
-    fireParticles.push(new FireParticle(x, y));
+    rageParticles.push(new RageParticle(x, y));
   }
 
   // Sparks: smaller, brighter (yellow, not orange), thrown up and outward
@@ -1029,8 +1030,8 @@ function spawnFireBlast(x, y) {
   for (let i = 0; i < 12; i++) {
     const angle = -Math.PI / 2 + (Math.random() - 0.5) * sparkSpread;
     const speed = Math.random() * 3.5 + 1.5;
-    fireParticles.push(
-      new FireParticle(x, y, {
+    rageParticles.push(
+      new RageParticle(x, y, {
         size: Math.random() * 3 + 1.5,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
@@ -1047,7 +1048,7 @@ function spawnFireBlast(x, y) {
     );
   }
 
-  ensureFireLoop();
+  ensureRageParticleLoop();
 
   if (!muted) window.rageAudio?.playFireSound();
 }
@@ -1059,11 +1060,86 @@ function spawnFireBlast(x, y) {
 // button is held, mirroring the referenced example's press-and-drag
 // painting instead of only supporting single discrete clicks.
 function spawnFireTrail(x, y) {
-  if (fireParticles.length > 400) return; // cap so a long drag can't run away
+  if (rageParticles.length > 400) return; // cap so a long drag can't run away
   for (let i = 0; i < 3; i++) {
-    fireParticles.push(new FireParticle(x, y));
+    rageParticles.push(new RageParticle(x, y));
   }
-  ensureFireLoop();
+  ensureRageParticleLoop();
+}
+
+// A small dark punched-through hole plus a few jagged cracks radiating out
+// at random angles/lengths — generated fresh each time so no two impacts
+// look identical. Unlike Fire's scorch decal (removed — it looked bad),
+// this is a distinct, deliberate visual for a completely different effect,
+// not a repeat of it.
+function bulletHoleSvgMarkup() {
+  const size = 70;
+  const half = size / 2;
+  const crackCount = 5 + Math.floor(Math.random() * 3);
+  let cracks = '';
+  for (let i = 0; i < crackCount; i++) {
+    const angle = (Math.PI * 2 * i) / crackCount + (Math.random() - 0.5) * 0.7;
+    const bendAngle = angle + (Math.random() - 0.5) * 0.5;
+    const midLen = half * (0.28 + Math.random() * 0.18);
+    const endLen = half * (0.62 + Math.random() * 0.32);
+    const mx = (half + Math.cos(angle) * midLen).toFixed(1);
+    const my = (half + Math.sin(angle) * midLen).toFixed(1);
+    const ex = (half + Math.cos(bendAngle) * endLen).toFixed(1);
+    const ey = (half + Math.sin(bendAngle) * endLen).toFixed(1);
+    cracks += `<path d="M${half},${half} L${mx},${my} L${ex},${ey}" stroke="rgba(15,15,15,0.55)" stroke-width="1.3" fill="none" stroke-linecap="round"/>`;
+  }
+  return `
+    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+      ${cracks}
+      <circle cx="${half}" cy="${half}" r="6.5" fill="#100e0c"/>
+      <circle cx="${half - 1.6}" cy="${half - 1.6}" r="2" fill="rgba(255,255,255,0.22)"/>
+    </svg>
+  `;
+}
+
+// Impact decal (DOM, a static punched hole + cracks) plus a quick radial
+// burst of hot particles for the muzzle flash. Unlike Fire's sparks (kept
+// inside an upward cone deliberately, so they don't read as an explosion),
+// a bullet impact SHOULD read as a sudden burst in every direction — that's
+// the correct look here, not a bug to avoid.
+function spawnBulletHole(x, y) {
+  if (rageLayer) {
+    const hole = document.createElement('div');
+    hole.className = 'rage-bullet-hole';
+    hole.style.left = `${x}px`;
+    hole.style.top = `${y}px`;
+    hole.style.transform = `translate(-50%, -50%) rotate(${Math.round(Math.random() * 360)}deg)`;
+    hole.innerHTML = bulletHoleSvgMarkup();
+    rageLayer.appendChild(hole);
+    requestAnimationFrame(() => hole.classList.add('visible'));
+    setTimeout(() => hole.classList.add('fading'), 2400);
+    setTimeout(() => hole.remove(), 3200);
+  }
+
+  for (let i = 0; i < 10; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = Math.random() * 5 + 2.5;
+    rageParticles.push(
+      new RageParticle(x, y, {
+        size: Math.random() * 2.5 + 1,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        buoyancy: 0,
+        gravity: 0.15,
+        wobbleIntensity: 0,
+        hue: Math.random() * 20 + 40, // yellow-white hot
+        brightness: Math.random() * 8 + 90,
+        decay: Math.random() * 0.05 + 0.06,
+        shrink: 0.1,
+        hueFade: 1.2,
+        brightnessFade: 3,
+      })
+    );
+  }
+
+  ensureRageParticleLoop();
+
+  if (!muted) window.rageAudio?.playGunshotSound();
 }
 
 const easeOutCubic = (x) => 1 - Math.pow(1 - x, 3);
