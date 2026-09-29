@@ -14,6 +14,23 @@ function emit(status) {
   if (statusCallback) statusCallback(status);
 }
 
+// electron-updater's own error.message is the raw HTTP client error — for a
+// failed request that includes the full response, headers and cookies
+// inline as text, which is meaningless (and a little embarrassing) shown
+// straight to a user. This turns the handful of cases that actually happen
+// in practice into one short sentence each; everything else falls back to a
+// generic message, with the real error still logged for us to debug.
+function friendlyErrorMessage(err) {
+  const raw = err?.message || String(err);
+  if (/\b404\b/.test(raw)) {
+    return "No published updates found for this app yet.";
+  }
+  if (/ENOTFOUND|ECONNREFUSED|ETIMEDOUT|getaddrinfo|net::ERR_/i.test(raw)) {
+    return "Couldn't reach the update server — check your connection.";
+  }
+  return "Couldn't check for updates right now.";
+}
+
 function initUpdater(onStatus) {
   statusCallback = onStatus;
 
@@ -33,7 +50,8 @@ function initUpdater(onStatus) {
     setTimeout(() => autoUpdater.quitAndInstall(), 1500);
   });
   autoUpdater.on('error', (err) => {
-    emit({ state: 'error', message: err?.message || String(err) });
+    console.error('Update check failed:', err);
+    emit({ state: 'error', message: friendlyErrorMessage(err) });
   });
 }
 
@@ -45,7 +63,8 @@ async function checkForUpdates() {
   try {
     await autoUpdater.checkForUpdates();
   } catch (err) {
-    emit({ state: 'error', message: err?.message || String(err) });
+    console.error('Update check failed:', err);
+    emit({ state: 'error', message: friendlyErrorMessage(err) });
   }
 }
 
