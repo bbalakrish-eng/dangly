@@ -45,10 +45,23 @@ function computeGroundY() {
   return window.overlayHost.size().height - Math.max(insetBottom, 0) - 16;
 }
 
+// Rage Room's char/smoke layers are drawn crisp to their own offscreen
+// buffers first, then composited onto the real canvas through a blur (see
+// ensureRageParticleLoop) — blurring the whole merged shape at once, rather
+// than each little circle individually, is what actually reads as one soft
+// continuous patch/cloud instead of a row of separately-blurred dots. Sized
+// alongside the real canvas in resizeEffectsCanvas below.
+const rageCharBuffer = document.createElement('canvas');
+const rageSmokeBuffer = document.createElement('canvas');
+
 function resizeEffectsCanvas() {
   const size = window.overlayHost.size();
   canvas.width = size.width;
   canvas.height = size.height;
+  rageCharBuffer.width = size.width;
+  rageCharBuffer.height = size.height;
+  rageSmokeBuffer.width = size.width;
+  rageSmokeBuffer.height = size.height;
 }
 resizeEffectsCanvas();
 window.addEventListener('resize', resizeEffectsCanvas);
@@ -993,20 +1006,164 @@ class RageParticle {
   }
 }
 
+// A burnt mark left on the ground wherever fire has actually been — the
+// same "many small overlapping circles" trick as RageParticle rather than
+// one flat gradient shape, which is what made an earlier scorch-mark
+// attempt look bad enough to get pulled entirely. Plain alpha compositing
+// (drawn before the 'screen'-blended flame layer in the render loop below,
+// so it sits underneath rather than dimming the bright fire on top of it)
+// darkens whatever's behind it instead of glowing. Lingers well after the
+// flame/sparks that made it have burned out — that lag is the point, a
+// "follow-through" — then fades on its own, self-cleaning like the rest of
+// Rage Room, just on a slower clock.
+class CharMark {
+  constructor(x, y) {
+    this.x = x + (Math.random() * 20 - 10);
+    this.y = y + (Math.random() * 10 - 5);
+    this.size = Math.random() * 9 + 5;
+    this.maxAlpha = Math.random() * 0.22 + 0.18; // subtle char, not a solid black blotch
+    this.age = 0;
+    this.holdFrames = 200 + Math.random() * 100;
+    this.fadeFrames = 140 + Math.random() * 60;
+  }
+
+  update() {
+    this.age++;
+  }
+
+  dead() {
+    return this.age > this.holdFrames + this.fadeFrames;
+  }
+
+  draw(ctx) {
+    let alpha = this.maxAlpha;
+    if (this.age > this.holdFrames) {
+      alpha *= Math.max(0, 1 - (this.age - this.holdFrames) / this.fadeFrames);
+    }
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fillStyle = '#12100d';
+    ctx.fill();
+  }
+}
+
+// A thin, slow-rising grey puff — spawned sparingly (see the throttling in
+// spawnFireTrail below) so it reads as a subtle wisp drifting off the
+// flame, not a smoke machine. Drawn with plain alpha blending on top of the
+// flame layer (real smoke rises up and in front of the fire it came from),
+// not 'screen', which would just wash a translucent grey out to nothing
+// against anything bright behind it.
+class SmokeWisp {
+  constructor(x, y) {
+    this.x = x + (Math.random() * 14 - 7);
+    this.y = y + (Math.random() * 8 - 4);
+    this.size = Math.random() * 7 + 5;
+    this.vx = (Math.random() - 0.5) * 0.3;
+    this.vy = -(Math.random() * 0.35 + 0.25);
+    this.wobbleSpeed = Math.random() * 0.03 + 0.015;
+    this.wobbleIntensity = Math.random() * 0.5 + 0.2;
+    this.alpha = Math.random() * 0.1 + 0.06;
+    this.decay = Math.random() * 0.0012 + 0.0009;
+    this.growth = Math.random() * 0.035 + 0.02;
+    // A fixed little cluster of off-center sub-blobs rather than one clean
+    // circle — a perfect disc still reads as "a circle" no matter how much
+    // blur is layered on top of it; an irregular silhouette is what actually
+    // looks like a puff of smoke instead of a soft dot.
+    this.blobs = Array.from({ length: 3 + Math.floor(Math.random() * 2) }, () => ({
+      ox: (Math.random() - 0.5) * 1.6,
+      oy: (Math.random() - 0.5) * 1.6,
+      scale: 0.55 + Math.random() * 0.6,
+    }));
+  }
+
+  update(frame) {
+    this.vy *= 0.995; // gentle drift, not a rocket
+    this.x += this.vx + Math.sin(frame * this.wobbleSpeed) * this.wobbleIntensity;
+    this.y += this.vy;
+    this.size += this.growth;
+    this.alpha -= this.decay;
+  }
+
+  dead() {
+    return this.alpha <= 0;
+  }
+
+  draw(ctx) {
+    ctx.globalAlpha = Math.max(this.alpha, 0);
+    ctx.fillStyle = '#9a9892';
+    for (const b of this.blobs) {
+      ctx.beginPath();
+      ctx.arc(this.x + b.ox * this.size, this.y + b.oy * this.size, this.size * b.scale, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
+// A small precomputed patch of grayscale static, reused every frame rather
+// than generated pixel-by-pixel each time — composited (see
+// ensureRageParticleLoop) only where the char layer has already drawn,
+// so it reads as grain baked into the burnt patch itself, not a texture
+// pasted over the whole screen.
+function createNoiseTexture(size) {
+  const t = document.createElement('canvas');
+  t.width = size;
+  t.height = size;
+  const tctx = t.getContext('2d');
+  const imageData = tctx.createImageData(size, size);
+  for (let i = 0; i < imageData.data.length; i += 4) {
+    const v = Math.random() * 255;
+    imageData.data[i] = v;
+    imageData.data[i + 1] = v;
+    imageData.data[i + 2] = v;
+    imageData.data[i + 3] = 255;
+  }
+  tctx.putImageData(imageData, 0, 0);
+  return t;
+}
+const rageCharNoiseTexture = createNoiseTexture(96);
+
 let rageParticles = [];
+let rageCharMarks = [];
+let rageSmoke = [];
 let rageFrame = 0;
 let rageLoopHandle = null;
 
 // Runs only while there's actually something to draw — started on the
 // first spark of a burst, and left to stop itself once every particle in
 // it has fully decayed, rather than a fixed-duration timer that has to
-// guess how long that will take.
+// guess how long that will take. Draws char marks first (the ground layer
+// the flame sits on top of), then flame/sparks with additive 'screen'
+// blending, then smoke last on top — the same front-to-back order real
+// fire, ground and rising smoke actually stack in.
 function ensureRageParticleLoop() {
   if (rageLoopHandle) return;
   const ctx = canvas.getContext('2d');
+  const charCtx = rageCharBuffer.getContext('2d');
+  const smokeCtx = rageSmokeBuffer.getContext('2d');
   function tick() {
     rageFrame++;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Char marks: drawn crisp to their own buffer, then blurred as one
+    // merged shape onto the real canvas (not blurred individually — see the
+    // comment on rageCharBuffer above), then given a pass of grain that
+    // only lands where that blurred shape already has alpha.
+    charCtx.clearRect(0, 0, rageCharBuffer.width, rageCharBuffer.height);
+    for (let i = 0; i < rageCharMarks.length; i++) {
+      rageCharMarks[i].update();
+      rageCharMarks[i].draw(charCtx);
+    }
+    ctx.save();
+    ctx.filter = 'blur(6px)';
+    ctx.drawImage(rageCharBuffer, 0, 0);
+    ctx.filter = 'none';
+    ctx.globalCompositeOperation = 'source-atop';
+    ctx.globalAlpha = 0.16;
+    ctx.fillStyle = ctx.createPattern(rageCharNoiseTexture, 'repeat');
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
     for (let i = 0; i < rageParticles.length; i++) {
@@ -1015,8 +1172,24 @@ function ensureRageParticleLoop() {
       p.draw(ctx);
     }
     ctx.restore();
+
+    // Smoke: same buffer-then-blur approach, drawn last/on top since real
+    // smoke rises up and in front of the fire and ground beneath it.
+    smokeCtx.clearRect(0, 0, rageSmokeBuffer.width, rageSmokeBuffer.height);
+    for (let i = 0; i < rageSmoke.length; i++) {
+      rageSmoke[i].update(rageFrame);
+      rageSmoke[i].draw(smokeCtx);
+    }
+    ctx.save();
+    ctx.filter = 'blur(7px)';
+    ctx.drawImage(rageSmokeBuffer, 0, 0);
+    ctx.filter = 'none';
+    ctx.restore();
+
     rageParticles = rageParticles.filter((p) => !p.dead());
-    if (rageParticles.length > 0) {
+    rageCharMarks = rageCharMarks.filter((p) => !p.dead());
+    rageSmoke = rageSmoke.filter((p) => !p.dead());
+    if (rageParticles.length > 0 || rageCharMarks.length > 0 || rageSmoke.length > 0) {
       rageLoopHandle = requestAnimationFrame(tick);
     } else {
       rageLoopHandle = null;
@@ -1029,15 +1202,25 @@ function stopRageParticles() {
   if (rageLoopHandle) cancelAnimationFrame(rageLoopHandle);
   rageLoopHandle = null;
   rageParticles = [];
+  rageCharMarks = [];
+  rageSmoke = [];
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
-// A burst of particle flame and sparks (canvas, for the organic motion) —
-// no lingering scorch/burn decal after it decays, just the fire itself.
+// A burst of particle flame and sparks (canvas, for the organic motion),
+// plus a handful of char marks right where it took hold and a couple of
+// smoke wisps starting to rise — the trail below adds more of both as the
+// fire is dragged, so the burn traces the actual path, not just the
+// starting point.
 function spawnFireBlast(x, y) {
-  for (let i = 0; i < 22; i++) {
-    rageParticles.push(new RageParticle(x, y));
+  for (let i = 0; i < 70; i++) {
+    // Smaller and more numerous than a first pass at this (which was 22
+    // particles sized 10-30) — same overall spread/footprint, just made of
+    // finer, more textured pieces, confirmed against the shipped version
+    // side by side before landing here. shrink is scaled down to match the
+    // smaller starting size, so they don't vanish before they've read.
+    rageParticles.push(new RageParticle(x, y, { size: Math.random() * 8 + 4, shrink: 0.13 }));
   }
 
   // Sparks: smaller, brighter (yellow, not orange), thrown up and outward
@@ -1068,22 +1251,33 @@ function spawnFireBlast(x, y) {
     );
   }
 
+  for (let i = 0; i < 5; i++) rageCharMarks.push(new CharMark(x, y));
+  for (let i = 0; i < 2; i++) rageSmoke.push(new SmokeWisp(x, y));
+
   ensureRageParticleLoop();
 
   if (!muted) window.rageAudio?.playFireSound();
 }
 
-// A lighter version of spawnFireBlast for continuous mouse-drag trails — just
-// a few flame particles, no scorch mark and no sound (those are one-shot
-// reactions to a discrete click, not something that should repeat on every
-// frame of a drag). Called from rageCatcher's mousemove handler while the
-// button is held, mirroring the referenced example's press-and-drag
-// painting instead of only supporting single discrete clicks.
+// A lighter version of spawnFireBlast for continuous mouse-drag trails —
+// fewer flame particles and no sound (that's a one-shot reaction to a
+// discrete click, not something that should repeat every frame of a drag),
+// but still a char mark on every tick and an occasional smoke wisp, so the
+// burnt trail and rising smoke actually trace the dragged path instead of
+// only ever showing up at the first click. Called from rageCatcher's
+// mousemove handler while the button is held, mirroring the referenced
+// example's press-and-drag painting instead of only supporting single
+// discrete clicks.
 function spawnFireTrail(x, y) {
-  if (rageParticles.length > 400) return; // cap so a long drag can't run away
-  for (let i = 0; i < 3; i++) {
-    rageParticles.push(new RageParticle(x, y));
+  if (rageParticles.length < 400) {
+    for (let i = 0; i < 6; i++) {
+      rageParticles.push(new RageParticle(x, y, { size: Math.random() * 8 + 4, shrink: 0.13 }));
+    }
   }
+  if (rageCharMarks.length < 600) rageCharMarks.push(new CharMark(x, y));
+  // Throttled well below "one per tick" — smoke on every frame of a drag
+  // reads as a smoke machine, not the subtle wisp this is meant to be.
+  if (rageSmoke.length < 150 && Math.random() < 0.35) rageSmoke.push(new SmokeWisp(x, y));
   ensureRageParticleLoop();
 }
 
