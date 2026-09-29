@@ -16,6 +16,7 @@ import os
 import subprocess
 import tempfile
 
+import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
 INK = (0x11, 0x13, 0x14, 255)
@@ -37,20 +38,71 @@ CONTENT = 824  # leaves a margin around the edges for the drop shadow to bleed i
 SUPERSAMPLE = 4
 
 
+def linear_gradient(w, h, color1, color2, angle=90):
+    theta = np.radians(angle)
+    dx, dy = np.cos(theta), np.sin(theta)
+    y, x = np.mgrid[0:h, 0:w]
+    proj = x * dx + y * dy
+    proj = (proj - proj.min()) / (proj.max() - proj.min())
+    out = np.empty((h, w, 3), dtype=np.float32)
+    for c in range(3):
+        out[..., c] = color1[c] + (color2[c] - color1[c]) * proj
+    return Image.fromarray(out.astype(np.uint8), "RGB")
+
+
+def radial_gradient(w, h, center, radius, color1, color2):
+    cx, cy = center
+    y, x = np.mgrid[0:h, 0:w]
+    dist = np.clip(np.sqrt((x - cx) ** 2 + (y - cy) ** 2) / radius, 0, 1)
+    out = np.empty((h, w, 3), dtype=np.float32)
+    for c in range(3):
+        out[..., c] = color1[c] + (color2[c] - color1[c]) * dist
+    return Image.fromarray(out.astype(np.uint8), "RGB")
+
+
 def render():
     hi = CONTENT * SUPERSAMPLE
-    tile = Image.new("RGBA", (hi, hi), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(tile)
-    draw.rounded_rectangle([0, 0, hi - 1, hi - 1], radius=CORNER_RATIO * hi, fill=INK)
 
-    cx = RING_CX_RATIO * hi
-    cy = RING_CY_RATIO * hi
-    outer = RING_OUTER_RATIO * hi
-    inner = RING_INNER_RATIO * hi
+    # Flat body — no gradient, no gloss. The only 3D cue is a bevel: a light
+    # edge along the top-left of the squircle's own outline, a dark edge
+    # along the bottom-right, as if it were a raised button lit from the
+    # upper-left. The ring on top stays flat/simple.
+    squircle_mask = Image.new("L", (hi, hi), 0)
+    ImageDraw.Draw(squircle_mask).rounded_rectangle([0, 0, hi - 1, hi - 1], radius=CORNER_RATIO * hi, fill=255)
+    tile = Image.new("RGBA", (hi, hi), (0, 0, 0, 0))
+    tile.paste(INK, (0, 0), squircle_mask)
+
+    edge_w = max(2, int(hi * 0.016))
+    edge_outline = Image.new("L", (hi, hi), 0)
+    ImageDraw.Draw(edge_outline).rounded_rectangle(
+        [0, 0, hi - 1, hi - 1], radius=CORNER_RATIO * hi, outline=255, width=edge_w
+    )
+    edge_outline = edge_outline.filter(ImageFilter.GaussianBlur(hi * 0.003))
+    edge_arr = np.array(edge_outline).astype(np.float32) / 255.0
+
+    # A diagonal 0..1 split (1 = top-left, 0 = bottom-right) decides how much
+    # of the outline at each point is "highlight" vs. "shadow".
+    diag = np.array(linear_gradient(hi, hi, (255, 255, 255), (0, 0, 0), angle=135).convert("L")).astype(np.float32) / 255.0
+
+    highlight_layer = Image.new("RGBA", (hi, hi), (255, 255, 255, 0))
+    highlight_layer.putalpha(Image.fromarray((edge_arr * diag * 190).astype(np.uint8)))
+    highlight_layer.putalpha(Image.composite(highlight_layer.split()[3], Image.new("L", (hi, hi), 0), squircle_mask))
+    tile.alpha_composite(highlight_layer)
+
+    shadow_layer = Image.new("RGBA", (hi, hi), (0, 0, 0, 0))
+    shadow_layer.putalpha(Image.fromarray((edge_arr * (1 - diag) * 190).astype(np.uint8)))
+    shadow_layer.putalpha(Image.composite(shadow_layer.split()[3], Image.new("L", (hi, hi), 0), squircle_mask))
+    tile.alpha_composite(shadow_layer)
+
+    # The ring: flat lime, no shading of its own.
+    cx, cy = RING_CX_RATIO * hi, RING_CY_RATIO * hi
+    outer, inner = RING_OUTER_RATIO * hi, RING_INNER_RATIO * hi
     lw = LINE_WIDTH_RATIO * hi
+    draw = ImageDraw.Draw(tile)
     draw.rectangle([cx - lw / 2, 0, cx + lw / 2, cy - outer + 1], fill=LIME)
     draw.ellipse([cx - outer, cy - outer, cx + outer, cy + outer], fill=LIME)
     draw.ellipse([cx - inner, cy - inner, cx + inner, cy + inner], fill=INK)
+
     tile = tile.resize((CONTENT, CONTENT), Image.LANCZOS)
 
     # Soft drop shadow: a blurred, slightly-offset dark copy of the same
@@ -62,11 +114,11 @@ def render():
 
     shadow_shape = Image.new("RGBA", (CONTENT, CONTENT), (0, 0, 0, 0))
     ImageDraw.Draw(shadow_shape).rounded_rectangle(
-        [0, 0, CONTENT - 1, CONTENT - 1], radius=CORNER_RATIO * CONTENT, fill=(0, 0, 0, 130)
+        [0, 0, CONTENT - 1, CONTENT - 1], radius=CORNER_RATIO * CONTENT, fill=(0, 0, 0, 140)
     )
     shadow = Image.new("RGBA", (CANVAS, CANVAS), (0, 0, 0, 0))
-    shadow.paste(shadow_shape, (offset, offset + 14), shadow_shape)
-    shadow = shadow.filter(ImageFilter.GaussianBlur(18))
+    shadow.paste(shadow_shape, (offset, offset + 16), shadow_shape)
+    shadow = shadow.filter(ImageFilter.GaussianBlur(20))
 
     canvas = Image.alpha_composite(canvas, shadow)
     canvas.paste(tile, (offset, offset), tile)
