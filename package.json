@@ -11,6 +11,7 @@
     "generate-icons": "python3 scripts/generate-icons.py",
     "generate-dmg-background": "python3 scripts/generate-dmg-background.py",
     "generate-dmg-file-icon": "python3 scripts/generate-dmg-file-icon.py",
+    "generate-windows-icon": "python3 scripts/generate-windows-icon.py",
     "package:mac": "electron-builder --mac",
     "package:win": "electron-builder --win"
   },
@@ -74,7 +75,7 @@
       ]
     },
     "win": {
-      "icon": "assets/icon.png",
+      "icon": "assets/windows-icon.ico",
       "target": [
         {
           "target": "nsis",
