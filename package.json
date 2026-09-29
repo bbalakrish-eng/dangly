@@ -9,6 +9,7 @@
   "scripts": {
     "start": "electron .",
     "generate-icons": "python3 scripts/generate-icons.py",
+    "generate-dmg-background": "python3 scripts/generate-dmg-background.py",
     "package:mac": "electron-builder --mac",
     "package:win": "electron-builder --win"
   },
@@ -56,6 +57,19 @@
         }
       ],
       "artifactName": "Dangly-${version}-${arch}.${ext}"
+    },
+    "dmg": {
+      "title": "Dangly ${version}",
+      "background": "assets/dmg-background.png",
+      "iconSize": 100,
+      "window": {
+        "width": 660,
+        "height": 420
+      },
+      "contents": [
+        { "x": 170, "y": 210, "type": "file" },
+        { "x": 490, "y": 210, "type": "link", "path": "/Applications" }
+      ]
     },
     "win": {
       "icon": "assets/icon.png",
