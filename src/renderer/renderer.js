@@ -1067,50 +1067,17 @@ function spawnFireTrail(x, y) {
   ensureRageParticleLoop();
 }
 
-// A jagged torn-metal shard (irregular polygon, vertex radii drawn from a
-// wide random range rather than alternating cleanly between two fixed
-// radii) around a dark punched hole — generated fresh each time so no two
-// impacts look identical. Two earlier attempts at this didn't land: thin
-// radiating crack lines read as a bug sitting on the screen, and a clean
-// alternating-radius star read as a ninja-star sticker; this shape (plus
-// the soft drop-shadow below) is what actually reads as a torn hole.
-function bulletHoleSvgMarkup() {
-  const size = 90;
-  const half = size / 2;
-  const vertexCount = 10 + Math.floor(Math.random() * 5);
-  const points = [];
-  for (let i = 0; i < vertexCount; i++) {
-    const baseAngle = (Math.PI * 2 * i) / vertexCount;
-    const angle = baseAngle + (Math.random() - 0.5) * ((Math.PI * 2) / vertexCount) * 0.8;
-    const radius = half * (0.34 + Math.random() * 0.62);
-    points.push(`${(half + Math.cos(angle) * radius).toFixed(1)},${(half + Math.sin(angle) * radius).toFixed(1)}`);
-  }
-  const shardPath = `M${points.join(' L')} Z`;
-  const holeRadius = half * 0.34;
-  const gradId = `bh-${Math.random().toString(36).slice(2, 9)}`;
-  return `
-    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <radialGradient id="${gradId}" cx="40%" cy="38%" r="70%">
-          <stop offset="0%" stop-color="#a0a0a0"/>
-          <stop offset="55%" stop-color="#5c5c5c"/>
-          <stop offset="100%" stop-color="#222222"/>
-        </radialGradient>
-        <filter id="${gradId}-shadow" x="-50%" y="-50%" width="200%" height="200%">
-          <feDropShadow dx="0" dy="1.5" stdDeviation="1.6" flood-color="#000" flood-opacity="0.45"/>
-        </filter>
-      </defs>
-      <path d="${shardPath}" fill="url(#${gradId})" stroke="rgba(0,0,0,0.55)" stroke-width="1" filter="url(#${gradId}-shadow)"/>
-      <circle cx="${half}" cy="${half}" r="${holeRadius.toFixed(1)}" fill="#050505"/>
-      <circle cx="${(half - holeRadius * 0.3).toFixed(1)}" cy="${(half - holeRadius * 0.3).toFixed(1)}" r="${(holeRadius * 0.3).toFixed(1)}" fill="rgba(255,255,255,0.14)"/>
-    </svg>
-  `;
-}
+// Two hand-made attempts at a procedural decal (thin radiating crack lines,
+// then a jagged SVG shard) both looked bad — replaced with the real bullet
+// hole art dropped into assets/gun_shot/. Picking randomly between the five
+// variants is what gives repeated shots some visual variety, the same
+// purpose the earlier procedural randomization served.
+const BULLET_HOLE_IMAGES = ['hole-1.png', 'hole-2.png', 'hole-3.png', 'hole-4.png', 'hole-5.png'];
 
-// Impact decal (DOM, a static jagged torn-metal shard) plus a quick radial
-// burst of hot particles for the muzzle flash. Unlike Fire's sparks (kept
-// inside an upward cone deliberately, so they don't read as an explosion),
-// a bullet impact SHOULD read as a sudden burst in every direction — that's
+// Impact decal (DOM, one of the bullet-hole PNGs) plus a quick radial burst
+// of hot particles for the muzzle flash. Unlike Fire's sparks (kept inside
+// an upward cone deliberately, so they don't read as an explosion), a
+// bullet impact SHOULD read as a sudden burst in every direction — that's
 // the correct look here, not something to avoid.
 function spawnBulletHole(x, y) {
   if (rageLayer) {
@@ -1118,8 +1085,16 @@ function spawnBulletHole(x, y) {
     hole.className = 'rage-bullet-hole';
     hole.style.left = `${x}px`;
     hole.style.top = `${y}px`;
-    hole.style.transform = `translate(-50%, -50%) rotate(${Math.round(Math.random() * 360)}deg)`;
-    hole.innerHTML = bulletHoleSvgMarkup();
+    const scale = 0.85 + Math.random() * 0.35;
+    const rotate = Math.round(Math.random() * 360);
+    hole.style.transform = `translate(-50%, -50%) rotate(${rotate}deg) scale(${scale})`;
+    const img = document.createElement('img');
+    img.draggable = false;
+    const pick = BULLET_HOLE_IMAGES[Math.floor(Math.random() * BULLET_HOLE_IMAGES.length)];
+    window.overlayAPI.resolveAssetPath(`assets/gun_shot/${pick}`).then((url) => {
+      img.src = url;
+    });
+    hole.appendChild(img);
     rageLayer.appendChild(hole);
     requestAnimationFrame(() => hole.classList.add('visible'));
     setTimeout(() => hole.classList.add('fading'), 2400);

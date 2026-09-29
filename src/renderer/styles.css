@@ -287,12 +287,19 @@ html, body {
 }
 
 /* The flash/sparks are drawn on #effects (canvas, see spawnBulletHole in
-   renderer.js) — this is just the torn-metal hole decal left behind,
-   fading a few seconds after the flash itself is already gone. */
+   renderer.js) — this is just the bullet-hole decal (assets/gun_shot/) left
+   behind, fading a few seconds after the flash itself is already gone. */
 .rage-bullet-hole {
   position: absolute;
   opacity: 0;
   transition: opacity 0.5s ease;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.4));
+}
+.rage-bullet-hole img {
+  display: block;
+  width: 80px;
+  height: auto;
+  pointer-events: none;
 }
 .rage-bullet-hole.visible {
   opacity: 1;

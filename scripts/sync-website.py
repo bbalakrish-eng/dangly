@@ -66,11 +66,28 @@ def copy_assets():
     return count
 
 
+def copy_gun_shot_assets():
+    # The Gunshot Rage Room effect's bullet-hole decal art (see spawnBulletHole
+    # in renderer.js) — referenced by relative path the same way item images
+    # are, so it needs the same assets/gun_shot/ layout on both sides.
+    src = os.path.join(ROOT, "assets", "gun_shot")
+    out = os.path.join(SITE, "assets", "gun_shot")
+    shutil.rmtree(out, ignore_errors=True)
+    os.makedirs(out)
+    count = 0
+    for name in sorted(os.listdir(src)):
+        if name.endswith(".png"):
+            shutil.copy2(os.path.join(src, name), os.path.join(out, name))
+            count += 1
+    return count
+
+
 def main():
     copy_engine()
     copy_catalog()
     n = copy_assets()
-    print(f"website/ synced: {len(ENGINE_FILES)} engine files, catalog, {n} assets")
+    g = copy_gun_shot_assets()
+    print(f"website/ synced: {len(ENGINE_FILES)} engine files, catalog, {n} assets, {g} gun_shot assets")
 
 
 if __name__ == "__main__":
