@@ -1067,41 +1067,51 @@ function spawnFireTrail(x, y) {
   ensureRageParticleLoop();
 }
 
-// A small dark punched-through hole plus a few jagged cracks radiating out
-// at random angles/lengths — generated fresh each time so no two impacts
-// look identical. Unlike Fire's scorch decal (removed — it looked bad),
-// this is a distinct, deliberate visual for a completely different effect,
-// not a repeat of it.
+// A jagged torn-metal shard (irregular polygon, vertex radii drawn from a
+// wide random range rather than alternating cleanly between two fixed
+// radii) around a dark punched hole — generated fresh each time so no two
+// impacts look identical. Two earlier attempts at this didn't land: thin
+// radiating crack lines read as a bug sitting on the screen, and a clean
+// alternating-radius star read as a ninja-star sticker; this shape (plus
+// the soft drop-shadow below) is what actually reads as a torn hole.
 function bulletHoleSvgMarkup() {
-  const size = 70;
+  const size = 90;
   const half = size / 2;
-  const crackCount = 5 + Math.floor(Math.random() * 3);
-  let cracks = '';
-  for (let i = 0; i < crackCount; i++) {
-    const angle = (Math.PI * 2 * i) / crackCount + (Math.random() - 0.5) * 0.7;
-    const bendAngle = angle + (Math.random() - 0.5) * 0.5;
-    const midLen = half * (0.28 + Math.random() * 0.18);
-    const endLen = half * (0.62 + Math.random() * 0.32);
-    const mx = (half + Math.cos(angle) * midLen).toFixed(1);
-    const my = (half + Math.sin(angle) * midLen).toFixed(1);
-    const ex = (half + Math.cos(bendAngle) * endLen).toFixed(1);
-    const ey = (half + Math.sin(bendAngle) * endLen).toFixed(1);
-    cracks += `<path d="M${half},${half} L${mx},${my} L${ex},${ey}" stroke="rgba(15,15,15,0.55)" stroke-width="1.3" fill="none" stroke-linecap="round"/>`;
+  const vertexCount = 10 + Math.floor(Math.random() * 5);
+  const points = [];
+  for (let i = 0; i < vertexCount; i++) {
+    const baseAngle = (Math.PI * 2 * i) / vertexCount;
+    const angle = baseAngle + (Math.random() - 0.5) * ((Math.PI * 2) / vertexCount) * 0.8;
+    const radius = half * (0.34 + Math.random() * 0.62);
+    points.push(`${(half + Math.cos(angle) * radius).toFixed(1)},${(half + Math.sin(angle) * radius).toFixed(1)}`);
   }
+  const shardPath = `M${points.join(' L')} Z`;
+  const holeRadius = half * 0.34;
+  const gradId = `bh-${Math.random().toString(36).slice(2, 9)}`;
   return `
     <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
-      ${cracks}
-      <circle cx="${half}" cy="${half}" r="6.5" fill="#100e0c"/>
-      <circle cx="${half - 1.6}" cy="${half - 1.6}" r="2" fill="rgba(255,255,255,0.22)"/>
+      <defs>
+        <radialGradient id="${gradId}" cx="40%" cy="38%" r="70%">
+          <stop offset="0%" stop-color="#a0a0a0"/>
+          <stop offset="55%" stop-color="#5c5c5c"/>
+          <stop offset="100%" stop-color="#222222"/>
+        </radialGradient>
+        <filter id="${gradId}-shadow" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy="1.5" stdDeviation="1.6" flood-color="#000" flood-opacity="0.45"/>
+        </filter>
+      </defs>
+      <path d="${shardPath}" fill="url(#${gradId})" stroke="rgba(0,0,0,0.55)" stroke-width="1" filter="url(#${gradId}-shadow)"/>
+      <circle cx="${half}" cy="${half}" r="${holeRadius.toFixed(1)}" fill="#050505"/>
+      <circle cx="${(half - holeRadius * 0.3).toFixed(1)}" cy="${(half - holeRadius * 0.3).toFixed(1)}" r="${(holeRadius * 0.3).toFixed(1)}" fill="rgba(255,255,255,0.14)"/>
     </svg>
   `;
 }
 
-// Impact decal (DOM, a static punched hole + cracks) plus a quick radial
+// Impact decal (DOM, a static jagged torn-metal shard) plus a quick radial
 // burst of hot particles for the muzzle flash. Unlike Fire's sparks (kept
 // inside an upward cone deliberately, so they don't read as an explosion),
 // a bullet impact SHOULD read as a sudden burst in every direction — that's
-// the correct look here, not a bug to avoid.
+// the correct look here, not something to avoid.
 function spawnBulletHole(x, y) {
   if (rageLayer) {
     const hole = document.createElement('div');
