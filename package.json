@@ -12,7 +12,8 @@
     "generate-dmg-background": "python3 scripts/generate-dmg-background.py",
     "generate-dmg-file-icon": "python3 scripts/generate-dmg-file-icon.py",
     "generate-windows-icon": "python3 scripts/generate-windows-icon.py",
-    "package:mac": "electron-builder --mac",
+    "install-dmgbuild": "pip3 install --user dmgbuild",
+    "package:mac": "electron-builder --mac && python3 scripts/build-dmg.py",
     "package:win": "electron-builder --win"
   },
   "devDependencies": {
@@ -34,7 +35,6 @@
     "directories": {
       "output": "dist"
     },
-    "afterAllArtifactBuild": "scripts/set-dmg-icon.js",
     "publish": {
       "provider": "github",
       "owner": "bbalakrish-eng",
@@ -45,13 +45,6 @@
       "category": "public.app-category.utilities",
       "target": [
         {
-          "target": "dmg",
-          "arch": [
-            "arm64",
-            "x64"
-          ]
-        },
-        {
           "target": "zip",
           "arch": [
             "arm64",
@@ -60,19 +53,6 @@
         }
       ],
       "artifactName": "Dangly-${version}-${arch}.${ext}"
-    },
-    "dmg": {
-      "title": "Dangly ${version}",
-      "background": "assets/dmg-background.png",
-      "iconSize": 100,
-      "window": {
-        "width": 660,
-        "height": 420
-      },
-      "contents": [
-        { "x": 170, "y": 210, "type": "file" },
-        { "x": 490, "y": 210, "type": "link", "path": "/Applications" }
-      ]
     },
     "win": {
       "icon": "assets/windows-icon.ico",
