@@ -45,7 +45,7 @@ import sys
 import tempfile
 
 from ds_store import DSStore
-from mac_alias import Alias, Bookmark
+from mac_alias import Alias
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 ASSETS = os.path.join(ROOT, "assets")
@@ -123,7 +123,6 @@ def write_finder_view(mount_point, volume_icon):
         run("SetFile", "-a", "C", mount_point)
 
     alias = Alias.for_file(background_dest)
-    bookmark = Bookmark.for_file(background_dest)
 
     bounds = WINDOW_RECT
     bwsp = {
@@ -165,7 +164,15 @@ def write_finder_view(mount_point, volume_icon):
         d["."]["vSrn"] = ("long", 1)
         d["."]["bwsp"] = bwsp
         d["."]["icvp"] = icvp
-        d["."]["pBBk"] = bookmark
+        # Deliberately NOT writing a "pBBk" bookmark entry (dmgbuild's own
+        # build_dmg() does) — this is a confirmed macOS 26.2 (Tahoe) Finder
+        # regression (Apple bug FB21405103, hit dmgbuild/electron-builder/
+        # Blender/Rhino alike): the *presence* of that bookmark record is
+        # what makes Finder silently ignore the background entirely on this
+        # OS version, even though the legacy "backgroundImageAlias" in icvp
+        # above is completely valid on its own and is all Finder actually
+        # needs. dmgbuild's own upstream fix (1.6.7, not yet on PyPI as of
+        # writing) is exactly this: drop the bookmark, keep the alias.
         d["."]["icvl"] = icvl
         d["Dangly.app"]["Iloc"] = APP_POS
         d["Applications"]["Iloc"] = LINK_POS
