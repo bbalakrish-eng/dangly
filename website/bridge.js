@@ -65,6 +65,7 @@
     getMuted: async () => false,
     onMutedChanged: () => {},
     exitRage: () => {},
+    setRageFocus: () => {},
   };
 
   window.demoBridge = {

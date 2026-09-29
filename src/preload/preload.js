@@ -20,4 +20,5 @@ contextBridge.exposeInMainWorld('overlayAPI', {
     ipcRenderer.on('sound:changed', (_event, muted) => callback(muted));
   },
   exitRage: () => ipcRenderer.send('rage:exit'),
+  setRageFocus: (active) => ipcRenderer.send('overlay:set-rage-focus', active),
 });

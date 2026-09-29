@@ -258,6 +258,18 @@ ipcMain.on('rage:exit', () => {
   setActiveItem(fallback);
 });
 
+// The overlay is `focusable: false` at all other times specifically so it
+// never steals keyboard focus while the user is working in some other app —
+// but that also means it can never receive the Escape key, so Rage Room's
+// "Press Esc to exit" hint silently did nothing. Made focusable only for as
+// long as a rage item is actually active, and given real OS key focus right
+// away rather than just being *eligible* for it.
+ipcMain.on('overlay:set-rage-focus', (_event, active) => {
+  if (!overlayWindow || overlayWindow.isDestroyed()) return;
+  overlayWindow.setFocusable(Boolean(active));
+  if (active) overlayWindow.focus();
+});
+
 ipcMain.handle('display:get-info', () => {
   const display = screen.getPrimaryDisplay();
   return { bounds: display.bounds, workArea: display.workArea };

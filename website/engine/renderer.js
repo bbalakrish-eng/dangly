@@ -13,6 +13,8 @@ const charmChainContainer = document.getElementById('charmChain');
 const rageCatcher = document.getElementById('rageCatcher');
 const rageLayer = document.getElementById('rageLayer');
 const rageHint = document.getElementById('rageHint');
+const rageHintText = document.getElementById('rageHintText');
+const rageExitBtn = document.getElementById('rageExitBtn');
 
 let currentItem = null;
 let particleSystem = null;
@@ -781,6 +783,17 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && rageActive) window.overlayAPI.exitRage();
 });
 
+// A guaranteed, keyboard-independent way out of Rage Room's full-screen
+// click-capture — Escape depends on the overlay actually holding OS key
+// focus (see setRageFocus in enterRageMode), which is a reasonable default
+// but not something to make the *only* way out if it doesn't take for some
+// reason on a given system. This button sits inside rageHint (pointer-events
+// enabled just for it, see .rage-exit-btn in styles.css) so it's always
+// clickable without needing to guess where on screen is "safe" to click.
+if (rageExitBtn) {
+  rageExitBtn.addEventListener('click', () => window.overlayAPI.exitRage());
+}
+
 function performRitual() {
   if (currentItem?.type === 'charm' && charmPhysics) {
     charmPhysics.flick();
@@ -902,7 +915,7 @@ function enterRageMode(item) {
   rageActive = true;
   if (rageCatcher) rageCatcher.classList.remove('hidden');
   if (rageHint) {
-    rageHint.textContent = `${item.description || 'Click anywhere on your screen.'} Press Esc to exit.`;
+    if (rageHintText) rageHintText.textContent = `${item.description || 'Click anywhere on your screen.'} Press Esc to exit.`;
     rageHint.classList.remove('hidden');
   }
   // Forced on once, rather than left to the per-mousemove hover check in
@@ -910,6 +923,12 @@ function enterRageMode(item) {
   // active — see there) — every point on screen needs to be "interactive"
   // here, not just the small area over a charm.
   window.overlayAPI.setIgnoreMouseEvents(false);
+  // The overlay is normally `focusable: false` so it never steals keyboard
+  // focus from whatever app the user is actually working in — but that also
+  // means it can never receive the Escape key. Granting it real focus only
+  // for as long as rage mode is active is what makes "Press Esc to exit"
+  // above actually work, instead of silently doing nothing.
+  window.overlayAPI.setRageFocus?.(true);
 }
 
 function exitRageMode() {
@@ -920,6 +939,7 @@ function exitRageMode() {
   if (rageHint) rageHint.classList.add('hidden');
   if (rageLayer) rageLayer.innerHTML = '';
   stopRageParticles();
+  window.overlayAPI.setRageFocus?.(false);
 }
 
 // Shared by every Rage Room effect that needs a burst of glowing motion —
