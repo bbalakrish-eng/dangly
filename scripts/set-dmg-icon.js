@@ -38,7 +38,10 @@ module.exports = async function setDmgIcon(buildResult) {
   try {
     fs.copyFileSync(iconIcns, tmpIcns); // work on a copy — sips edits it in place
     execFileSync('sips', ['-i', tmpIcns]);
-    const rsrc = execFileSync('DeRez', ['-only', 'icns', tmpIcns]);
+    // DeRez encodes the whole icns as hex text (~3-4x its binary size) — the
+    // gradient-shaded icon is big enough now that this exceeds Node's
+    // default 1MB execFileSync buffer (ENOBUFS) without an explicit maxBuffer.
+    const rsrc = execFileSync('DeRez', ['-only', 'icns', tmpIcns], { maxBuffer: 64 * 1024 * 1024 });
     fs.writeFileSync(rsrcPath, rsrc);
 
     for (const dmgPath of dmgPaths) {

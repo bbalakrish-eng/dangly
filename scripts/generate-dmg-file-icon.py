@@ -20,6 +20,8 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
 INK = (0x11, 0x13, 0x14, 255)
+INK_HILITE = (0x34, 0x39, 0x3D)  # body's lit side (upper-left)
+INK_SHADE = (0x05, 0x06, 0x06)  # body's shaded side (lower-right)
 LIME = (0xBD, 0xEA, 0x3F, 255)
 
 # Apple's own Big Sur+ "continuous corner" app-icon mask works out to close
@@ -63,14 +65,17 @@ def radial_gradient(w, h, center, radius, color1, color2):
 def render():
     hi = CONTENT * SUPERSAMPLE
 
-    # Flat body — no gradient, no gloss. The only 3D cue is a bevel: a light
-    # edge along the top-left of the squircle's own outline, a dark edge
-    # along the bottom-right, as if it were a raised button lit from the
-    # upper-left. The ring on top stays flat/simple.
+    # A little body shading plus a bevel — subtler than an earlier "domed
+    # button" pass (too strong), but a flat fill alone read as no 3D at all
+    # beyond the edges. INK_HILITE/INK_SHADE are close to INK itself, so the
+    # gradient is a gentle lift, not a visible dome.
     squircle_mask = Image.new("L", (hi, hi), 0)
     ImageDraw.Draw(squircle_mask).rounded_rectangle([0, 0, hi - 1, hi - 1], radius=CORNER_RATIO * hi, fill=255)
+    # Radial, not linear — centered up and to the left, so it reads as a
+    # curved/domed surface rather than a straight diagonal wipe.
+    body = radial_gradient(hi, hi, (hi * 0.28, hi * 0.24), hi * 1.05, INK_HILITE, INK_SHADE)
     tile = Image.new("RGBA", (hi, hi), (0, 0, 0, 0))
-    tile.paste(INK, (0, 0), squircle_mask)
+    tile.paste(body, (0, 0), squircle_mask)
 
     edge_w = max(2, int(hi * 0.016))
     edge_outline = Image.new("L", (hi, hi), 0)
@@ -101,7 +106,11 @@ def render():
     draw = ImageDraw.Draw(tile)
     draw.rectangle([cx - lw / 2, 0, cx + lw / 2, cy - outer + 1], fill=LIME)
     draw.ellipse([cx - outer, cy - outer, cx + outer, cy + outer], fill=LIME)
-    draw.ellipse([cx - inner, cy - inner, cx + inner, cy + inner], fill=INK)
+    # The hole reveals the body's own gradient rather than flat ink, so it
+    # doesn't look like a flat patch dropped onto shaded surface.
+    hole_mask = Image.new("L", (hi, hi), 0)
+    ImageDraw.Draw(hole_mask).ellipse([cx - inner, cy - inner, cx + inner, cy + inner], fill=255)
+    tile.paste(body, (0, 0), hole_mask)
 
     tile = tile.resize((CONTENT, CONTENT), Image.LANCZOS)
 
