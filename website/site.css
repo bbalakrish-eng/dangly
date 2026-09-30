@@ -8,8 +8,8 @@
 
 /* Light-or-dark page, one dark-or-vivid stage, one lime accent, one radius family.
    Two independent axes: --mode (light/dark, the whole page — data-mode on <html>, defaults to
-   the OS setting, overridable) and the stage's own look (data-theme="wallpaper" default | "green"
-   | "orange" on <body>, or ?theme= in the URL). */
+   light for every visitor regardless of OS setting, overridable via the toggle) and the stage's
+   own look (data-theme="wallpaper" default | "green" | "orange" on <body>, or ?theme= in the URL). */
 :root {
   --bg: #f3f4f4;
   --card: #e6e8e8;
@@ -38,19 +38,6 @@
   --ink2: #a2a8a6;
   --ink3: #717674;
   --line: rgba(255, 255, 255, 0.1);
-}
-
-@media (prefers-color-scheme: dark) {
-  /* Only when the visitor hasn't chosen explicitly — see the toggle in site.js. */
-  :root:not([data-mode='light']):not([data-mode='dark']) {
-    --bg: #121314;
-    --card: #1d1f20;
-    --card-on: #282a2b;
-    --ink: #f2f3f1;
-    --ink2: #a2a8a6;
-    --ink3: #717674;
-    --line: rgba(255, 255, 255, 0.1);
-  }
 }
 
 body[data-theme='green'] {
@@ -250,13 +237,20 @@ h1 {
 .faces i:first-child { margin-left: 0; }
 .faces img { height: 82%; object-fit: contain; }
 
-/* Download + demo buttons, straight under the headline. */
+/* Download + demo buttons, straight under the headline: the platform downloads sit side by
+   side, with "Watch demo" on its own row underneath rather than crowding the same line. */
 .hero-ctas {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 18px;
+  margin: 28px 0 28px;
+}
+.hero-cta-downloads {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 16px 24px;
-  margin: 28px 0 28px;
+  gap: 12px;
 }
 .hero-cta-primary {
   display: flex;
