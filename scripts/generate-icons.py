@@ -51,6 +51,34 @@ def render_mark(size, corner_ratio=CORNER_RATIO):
     return img.resize((size, size), Image.LANCZOS)
 
 
+def render_mark_inverted(size, corner_ratio=CORNER_RATIO):
+    # The dark-mode swap (see site.css/gallery.css's [data-mode-resolved='dark'] overrides): a
+    # lime square with a dark ring, not the other way round. A favicon has no CSS to react to the
+    # page's own mode, and lives in browser chrome that's dark as often as it's light, so this
+    # (not the default dark-square mark) is the one safe choice that reads on either.
+    hi = size * SUPERSAMPLE
+    img = Image.new("RGBA", (hi, hi), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+
+    if corner_ratio > 0:
+        draw.rounded_rectangle([0, 0, hi - 1, hi - 1], radius=corner_ratio * hi, fill=LIME)
+    else:
+        draw.rectangle([0, 0, hi - 1, hi - 1], fill=LIME)
+
+    cx = RING_CX_RATIO * hi
+    cy = RING_CY_RATIO * hi
+    outer = RING_OUTER_RATIO * hi
+    inner = RING_INNER_RATIO * hi
+
+    lw = LINE_WIDTH_RATIO * hi
+    draw.rectangle([cx - lw / 2, 0, cx + lw / 2, cy - outer + 1], fill=INK)
+
+    draw.ellipse([cx - outer, cy - outer, cx + outer, cy + outer], fill=INK)
+    draw.ellipse([cx - inner, cy - inner, cx + inner, cy + inner], fill=LIME)
+
+    return img.resize((size, size), Image.LANCZOS)
+
+
 def render_tray_template(size):
     # macOS menu-bar convention: a flat, single-color silhouette (Electron/
     # AppKit tint it automatically for light or dark menu bars, and apply the
@@ -115,3 +143,21 @@ if __name__ == "__main__":
     # call in tray.js). @1x/@2x follow the matching Retina-pairing convention.
     write_template(os.path.join(assets, "tray-iconTemplate.png"), 18)
     write_template(os.path.join(assets, "tray-iconTemplate@2x.png"), 36)
+
+    # Website favicon — the site had none at all (browsers were just showing their own generic
+    # tab icon), separate from the app icon above: keeps the mark's real rounded corner (no OS
+    # clipping to work around here) and uses the dark-mode-safe inverted colors (lime square, dark
+    # ring), since a favicon can't react to page mode and browser tab chrome is dark as often as
+    # light.
+    website = os.path.join(root, "website")
+    favicon_32 = render_mark_inverted(32)
+    favicon_180 = render_mark_inverted(180)
+    favicon_32.save(os.path.join(website, "favicon-32.png"))
+    print(f"wrote {os.path.join(website, 'favicon-32.png')} (32x32)")
+    favicon_180.save(os.path.join(website, "favicon-180.png"))
+    print(f"wrote {os.path.join(website, 'favicon-180.png')} (180x180)")
+    render_mark_inverted(256).save(
+        os.path.join(website, "favicon.ico"),
+        sizes=[(16, 16), (32, 32), (48, 48)],
+    )
+    print(f"wrote {os.path.join(website, 'favicon.ico')} (16/32/48)")
