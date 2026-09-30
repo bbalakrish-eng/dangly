@@ -401,20 +401,6 @@
   // fails or hasn't resolved yet by the time someone clicks.
   const REPO = 'bbalakrish-eng/dangly';
 
-  // Apple Silicon has been the default Mac since 2020, so it's the safe fallback when detection
-  // is inconclusive. WebGL's renderer string is the only reliable client-side signal (the UA
-  // string reports "Intel" on Apple Silicon too, under Rosetta).
-  function isAppleSilicon() {
-    try {
-      const canvas = document.createElement('canvas');
-      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-      const info = gl && gl.getExtension('WEBGL_debug_renderer_info');
-      const renderer = info && gl.getParameter(info.UNMASKED_RENDERER_WEBGL);
-      if (renderer && /Intel/i.test(renderer)) return false;
-    } catch {}
-    return true;
-  }
-
   async function initDownloads() {
     const macLinks = document.querySelectorAll('a[data-download="mac"]');
     const winLinks = document.querySelectorAll('a[data-download="win"]');
@@ -424,8 +410,8 @@
       if (!response.ok) return;
       const release = await response.json();
       const assets = release.assets || [];
-      const arch = isAppleSilicon() ? 'arm64' : 'x64';
-      const dmg = assets.find((a) => a.name.endsWith(`${arch}.dmg`)) || assets.find((a) => a.name.endsWith('.dmg'));
+      // One universal .dmg runs natively on both Apple Silicon and Intel — no arch to guess.
+      const dmg = assets.find((a) => a.name.endsWith('.dmg'));
       const exe = assets.find((a) => a.name.endsWith('.exe'));
       if (dmg) macLinks.forEach((a) => (a.href = dmg.browser_download_url));
       if (exe) winLinks.forEach((a) => (a.href = exe.browser_download_url));

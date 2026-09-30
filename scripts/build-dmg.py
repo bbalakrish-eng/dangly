@@ -250,22 +250,15 @@ def stamp_file_icon(dmg_path):
 
 def main():
     version = read_version()
-    targets = [
-        ("arm64", os.path.join(DIST, "mac-arm64", "Dangly.app")),
-        ("x64", os.path.join(DIST, "mac", "Dangly.app")),
-    ]
-    built_any = False
-    for arch, app_path in targets:
-        if not os.path.exists(app_path):
-            print(f"skipping {arch}: {app_path} not found", file=sys.stderr)
-            continue
-        out_path = os.path.join(DIST, f"Dangly-{version}-{arch}.dmg")
-        build_one(app_path, out_path, version)
-        stamp_file_icon(out_path)
-        built_any = True
-    if not built_any:
-        print("no .app bundles found under dist/ — run electron-builder --mac first", file=sys.stderr)
+    # A single universal build (see package.json's mac.target) runs natively on both Apple
+    # Silicon and Intel, so there's nothing to pick between — one .dmg, no arch in the name.
+    app_path = os.path.join(DIST, "mac-universal", "Dangly.app")
+    if not os.path.exists(app_path):
+        print(f"{app_path} not found — run electron-builder --mac first", file=sys.stderr)
         sys.exit(1)
+    out_path = os.path.join(DIST, f"Dangly-{version}.dmg")
+    build_one(app_path, out_path, version)
+    stamp_file_icon(out_path)
 
 
 if __name__ == "__main__":
