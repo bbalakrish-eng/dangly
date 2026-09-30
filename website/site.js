@@ -19,6 +19,8 @@
     ['autumn-leaves', 'Leaves'],
     ['coconut-break', 'Coconut'],
     ['lamp-lighting', 'Lamp'],
+    ['fire-blast', 'Fire'],
+    ['gunshot', 'Gunshot'],
   ];
 
   const SECTIONS = {
@@ -450,6 +452,17 @@
     // The stage's size feeds where charms hang and pets walk, so wait for the typeface before
     // the overlay measures the page.
     await Promise.race([document.fonts.ready, new Promise((resolve) => setTimeout(resolve, 1200))]);
+
+    // A link to e.g. "index.html#get" (the footer's Download/Install/Privacy pages link back to
+    // sections this way) arrives with the browser's own one-shot scroll-to-fragment racing
+    // against everything above — renderGallery() alone inserts most of the page's height, so by
+    // the time that native scroll fires the target has usually already moved. Redo it ourselves
+    // now that layout has settled.
+    if (location.hash) {
+      const target = document.querySelector(location.hash);
+      if (target) requestAnimationFrame(() => target.scrollIntoView());
+    }
+
     window.demoBridge.start(start);
     if (!reduceMotion) setTimeout(welcomeSway, 900);
   }
