@@ -865,6 +865,14 @@ body[data-theme='wallpaper'] .vert { top: 46px; }
   .frame { grid-template-columns: 1fr; height: auto; }
   .left { padding: 4px 14px 24px; }
   .right { height: 620px; }
+
+  /* Below the width where macOS and Windows fit on one line, they wrap onto their own — each
+     sized to its own text ("Windows" is longer than "macOS"), so stacked they visibly don't
+     match. Stretching both to the row's full width (align-items overrides the default "center",
+     which only sizes to content) makes them equal, with their contents centered rather than
+     left-hugging the now-wider pill. */
+  .hero-cta-downloads { flex-direction: column; align-items: stretch; }
+  .hero-cta-downloads .hero-cta-primary { justify-content: center; }
   .grid.charms, .grid.wide, .grid.mood { grid-template-columns: repeat(2, 1fr); }
   .why-grid { grid-template-columns: repeat(2, 1fr); row-gap: 26px; }
   .why-item:nth-child(3) { border-left: 0; }
