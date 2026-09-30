@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Install Dangly — Dangly</title>
+  <meta name="description" content="How to install Dangly on macOS and Windows, including what the first-launch security warning means and how to get past it." />
+  <link rel="preload" href="fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="site.css?v=20" />
+  <link rel="stylesheet" href="doc.css?v=1" />
+  <script>
+    (() => {
+      let saved = null;
+      try { saved = localStorage.getItem('mode'); } catch {}
+      const resolved = saved || 'light';
+      const root = document.documentElement;
+      root.dataset.modeResolved = resolved;
+      if (saved) root.dataset.mode = saved;
+    })();
+  </script>
+</head>
+<body data-theme="wallpaper">
+  <header class="doc-header">
+    <div class="toprow">
+      <a class="brand" href="index.html">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-name">Dangly</span>
+      </a>
+      <button type="button" class="mode-toggle" id="modeToggle" aria-label="Switch to dark mode">
+        <i class="ic ic-sun" style="--i: url(icons/sun.svg)"></i>
+        <i class="ic ic-moon" style="--i: url(icons/moon.svg)"></i>
+      </button>
+    </div>
+    <a class="doc-crumb" href="index.html">← Back to Dangly</a>
+  </header>
+
+  <main class="doc-article">
+    <p class="doc-eyebrow">Two minutes · No account</p>
+    <h1>Installing Dangly.</h1>
+    <p class="doc-lede">
+      Drag it to Applications on a Mac. On Windows, run the installer and get past one security
+      prompt. Neither platform asks for an account or admin rights.
+    </p>
+
+    <div class="doc-callout">
+      <strong>Quick answer.</strong> On a Mac, open the downloaded disk image, drag Dangly into
+      Applications, then right-click (or Control-click) the app and choose <strong>Open</strong>
+      the first time — macOS will ask you to confirm once, since Dangly isn't a paid-notarized
+      build. On Windows, run the installer and click <strong>More info → Run anyway</strong> if
+      SmartScreen shows a blue warning, since the build isn't code-signed yet either.
+    </div>
+
+    <h2>Installing on a Mac</h2>
+    <ol class="doc-steps">
+      <li>
+        <h3>Download the disk image</h3>
+        <p>One universal <code>.dmg</code> — it runs natively on Apple Silicon and Intel Macs alike, nothing to pick.</p>
+      </li>
+      <li>
+        <h3>Open the disk image</h3>
+        <p>Double-click the downloaded <code>.dmg</code>. A window opens showing Dangly beside a shortcut to your Applications folder.</p>
+      </li>
+      <li>
+        <h3>Drag Dangly into Applications</h3>
+        <p>Drag the app icon onto the Applications shortcut. Copying takes a couple of seconds.</p>
+      </li>
+      <li>
+        <h3>Eject the disk image</h3>
+        <p>Click the eject arrow beside the mounted image in Finder's sidebar, then move the downloaded <code>.dmg</code> to the Trash.</p>
+      </li>
+      <li>
+        <h3>Open it the first time</h3>
+        <p>
+          Double-clicking from Applications may show "Dangly can't be opened because Apple cannot
+          check it for malicious software" — that's Gatekeeper, not a problem with the download.
+          Instead, right-click (or Control-click) Dangly in Applications and choose
+          <strong>Open</strong>, then confirm <strong>Open</strong> again in the dialog that
+          appears. You only need to do this once; every launch after that is a normal double-click.
+        </p>
+      </li>
+      <li>
+        <h3>Pick a charm</h3>
+        <p>A charm appears hanging from the top of your screen. Click the Dangly icon in the menu bar to switch charms, try a ritual, or open Settings.</p>
+      </li>
+    </ol>
+
+    <h2>Installing on Windows</h2>
+    <ol class="doc-steps">
+      <li>
+        <h3>Download the installer</h3>
+        <p>A single <code>Setup .exe</code> for 64-bit Windows — Intel or AMD, which covers nearly every Windows PC.</p>
+      </li>
+      <li>
+        <h3>Run it past SmartScreen</h3>
+        <p>
+          Windows may show a blue "Windows protected your PC" panel, because the build isn't
+          code-signed yet. Choose <strong>More info</strong>, then <strong>Run anyway</strong>.
+        </p>
+      </li>
+      <li>
+        <h3>Let the installer finish</h3>
+        <p>It installs for the current user only and starts Dangly automatically — no options to choose, nothing bundled alongside it.</p>
+      </li>
+      <li>
+        <h3>Pick a charm</h3>
+        <p>A charm appears hanging from the top of your screen. The tray icon opens Settings, where charms, rituals and preferences live.</p>
+      </li>
+    </ol>
+
+    <h2>When something doesn't look right</h2>
+    <div class="faq">
+      <div class="faq-grid">
+        <details class="q">
+          <summary>Nothing appeared after launching.<i class="ic" style="--i: url(icons/plus.svg)"></i></summary>
+          <p>Look for the Dangly icon in the menu bar (Mac) or system tray (Windows). If it's there, Dangly is running — the charm may be on another display, or a Rage Room item may have taken over the screen (press Esc, or click the ✕ in its hint, to exit).</p>
+        </details>
+        <details class="q">
+          <summary>macOS says Dangly is from an unidentified developer.<i class="ic" style="--i: url(icons/plus.svg)"></i></summary>
+          <p>Expected on first launch — see step 5 above. Right-click the app in Applications, choose Open, and confirm once. It won't ask again after that.</p>
+        </details>
+        <details class="q">
+          <summary>macOS says Dangly is damaged and can't be opened.<i class="ic" style="--i: url(icons/plus.svg)"></i></summary>
+          <p>That almost always means the download was interrupted rather than anything wrong with the build. Delete it, empty the Trash, and download it again.</p>
+        </details>
+        <details class="q">
+          <summary>Will Dangly get in the way of what I'm clicking?<i class="ic" style="--i: url(icons/plus.svg)"></i></summary>
+          <p>No — the charm is click-through by default on both platforms and never takes keyboard focus. Rage Room items are the one exception: they take over your clicks on purpose, for as long as you leave that mode active.</p>
+        </details>
+        <details class="q">
+          <summary>How do I uninstall it?<i class="ic" style="--i: url(icons/plus.svg)"></i></summary>
+          <p>On a Mac, quit it from the menu bar and drag it from Applications to the Trash. On Windows, use Settings → Apps → Installed apps, find Dangly, and remove it there.</p>
+        </details>
+        <details class="q">
+          <summary>Does it update itself?<i class="ic" style="--i: url(icons/plus.svg)"></i></summary>
+          <p>Press Check for Updates in Settings and it'll tell you if a newer version is out, with a Download button straight to it — nothing installs itself in the background.</p>
+        </details>
+      </div>
+    </div>
+
+    <h2>More</h2>
+    <ul class="doc-more">
+      <li><a href="index.html">Everything Dangly can do</a></li>
+      <li><a href="privacy.html">What Dangly sends, and what it never sends</a></li>
+      <li><a href="index.html#faq">Frequently asked questions</a></li>
+    </ul>
+  </main>
+
+  <div class="site-foot">
+    <a class="sf-brand" href="index.html">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-name">Dangly</span>
+    </a>
+    <p class="sf-tagline">Traditions from around the world, hanging on your screen.</p>
+    <nav class="sf-links" aria-label="Page sections">
+      <a href="index.html#sec-charms">Charms</a>
+      <a href="index.html#sec-rituals">Rituals</a>
+      <a href="index.html#get">Download</a>
+      <a href="install.html">Install</a>
+      <a href="index.html#faq">Questions</a>
+      <a href="privacy.html">Privacy</a>
+    </nav>
+    <nav class="sf-links" aria-label="Contact">
+      <a href="https://instagram.com/bbalakrish" target="_blank" rel="noopener noreferrer">Instagram</a>
+      <a href="https://x.com/bbalakrish" target="_blank" rel="noopener noreferrer">X</a>
+    </nav>
+    <div class="sf-meta">
+      <span>© 2026 Dangly</span>
+      <a href="index.html#top">Back to top ↑</a>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const button = document.getElementById('modeToggle');
+      const root = document.documentElement;
+      const apply = (resolved) => {
+        root.dataset.modeResolved = resolved;
+        button.setAttribute('aria-label', resolved === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+      };
+      apply(root.dataset.modeResolved || 'light');
+      button.addEventListener('click', () => {
+        const next = root.dataset.modeResolved === 'dark' ? 'light' : 'dark';
+        root.dataset.mode = next;
+        try { localStorage.setItem('mode', next); } catch {}
+        apply(next);
+      });
+    })();
+  </script>
+</body>
+</html>

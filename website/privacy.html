@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Privacy — Dangly</title>
+  <meta name="description" content="What Dangly stores, what it sends over the network, and what it never touches at all." />
+  <link rel="preload" href="fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="site.css?v=20" />
+  <link rel="stylesheet" href="doc.css?v=1" />
+  <script>
+    (() => {
+      let saved = null;
+      try { saved = localStorage.getItem('mode'); } catch {}
+      const resolved = saved || 'light';
+      const root = document.documentElement;
+      root.dataset.modeResolved = resolved;
+      if (saved) root.dataset.mode = saved;
+    })();
+  </script>
+</head>
+<body data-theme="wallpaper">
+  <header class="doc-header">
+    <div class="toprow">
+      <a class="brand" href="index.html">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-name">Dangly</span>
+      </a>
+      <button type="button" class="mode-toggle" id="modeToggle" aria-label="Switch to dark mode">
+        <i class="ic ic-sun" style="--i: url(icons/sun.svg)"></i>
+        <i class="ic ic-moon" style="--i: url(icons/moon.svg)"></i>
+      </button>
+    </div>
+    <a class="doc-crumb" href="index.html">← Back to Dangly</a>
+  </header>
+
+  <main class="doc-article">
+    <p class="doc-eyebrow">Privacy</p>
+    <h1>Your desktop stays yours.</h1>
+    <p class="doc-lede">
+      Dangly runs on macOS and Windows without an account. Your chosen charm, its settings, and
+      your preferences stay on your own computer.
+    </p>
+
+    <h2>What Dangly keeps, and where</h2>
+    <p>
+      Dangly saves a single settings file on your own computer — which charm is active, any
+      per-charm tweaks you've made (size, rope length, opacity, position), and small preferences
+      like mute or hide-on-fullscreen. None of it leaves your machine, and there's no account for
+      it to be tied to.
+    </p>
+    <ul>
+      <li>No sign-in, no account, nothing to create.</li>
+      <li>Your settings live in a local file Dangly reads and writes itself — never uploaded.</li>
+      <li>Dangly doesn't read your screen contents, keystrokes, files, or other applications.</li>
+    </ul>
+
+    <h2>What touches the network</h2>
+    <p>
+      Dangly makes exactly one kind of network request: checking GitHub for a newer release, and
+      only when you press <strong>Check for Updates</strong> in Settings — nothing checks in the
+      background on its own. Like any request to any server, it necessarily carries your IP
+      address; it never carries your charm choice, your customizations, or anything else Dangly
+      has stored. There are no ads, no analytics, and no third-party trackers in the app today. If
+      that ever changes, this page will say so first.
+    </p>
+
+    <h2>What the overlay can and can't do</h2>
+    <p>
+      Dangly's charm sits on top of your other windows but is click-through by default — your
+      mouse and keyboard work exactly as if it weren't there. The one exception is a Rage Room
+      item you've deliberately opened, which takes over clicks on purpose for as long as you stay
+      in it, and stops the moment you press Esc or exit it.
+    </p>
+
+    <h2>Questions</h2>
+    <p>
+      If this page doesn't answer something, reach out on <a href="https://instagram.com/bbalakrish" target="_blank" rel="noopener noreferrer">Instagram</a>
+      or <a href="https://x.com/bbalakrish" target="_blank" rel="noopener noreferrer">X</a> — both
+      <strong>@bbalakrish</strong>. This page will keep up as Dangly changes.
+    </p>
+
+    <p style="margin-top: 40px; font-size: 13px; color: var(--ink3);">
+      Dangly is an independent app for macOS and Windows, not affiliated with Apple or Microsoft.
+    </p>
+
+    <h2>More</h2>
+    <ul class="doc-more">
+      <li><a href="install.html">How to install Dangly</a></li>
+      <li><a href="index.html">Everything Dangly can do</a></li>
+      <li><a href="index.html#faq">Frequently asked questions</a></li>
+    </ul>
+  </main>
+
+  <div class="site-foot">
+    <a class="sf-brand" href="index.html">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-name">Dangly</span>
+    </a>
+    <p class="sf-tagline">Traditions from around the world, hanging on your screen.</p>
+    <nav class="sf-links" aria-label="Page sections">
+      <a href="index.html#sec-charms">Charms</a>
+      <a href="index.html#sec-rituals">Rituals</a>
+      <a href="index.html#get">Download</a>
+      <a href="install.html">Install</a>
+      <a href="index.html#faq">Questions</a>
+      <a href="privacy.html">Privacy</a>
+    </nav>
+    <nav class="sf-links" aria-label="Contact">
+      <a href="https://instagram.com/bbalakrish" target="_blank" rel="noopener noreferrer">Instagram</a>
+      <a href="https://x.com/bbalakrish" target="_blank" rel="noopener noreferrer">X</a>
+    </nav>
+    <div class="sf-meta">
+      <span>© 2026 Dangly</span>
+      <a href="index.html#top">Back to top ↑</a>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const button = document.getElementById('modeToggle');
+      const root = document.documentElement;
+      const apply = (resolved) => {
+        root.dataset.modeResolved = resolved;
+        button.setAttribute('aria-label', resolved === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+      };
+      apply(root.dataset.modeResolved || 'light');
+      button.addEventListener('click', () => {
+        const next = root.dataset.modeResolved === 'dark' ? 'light' : 'dark';
+        root.dataset.mode = next;
+        try { localStorage.setItem('mode', next); } catch {}
+        apply(next);
+      });
+    })();
+  </script>
+</body>
+</html>
