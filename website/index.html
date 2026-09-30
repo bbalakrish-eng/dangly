@@ -13,14 +13,15 @@
   <script>
     // Runs before first paint (inline, in <head>) so the page never flashes the wrong mode —
     // by the time site.css's [data-mode]/[data-mode-resolved] rules apply, this has already run.
-    // A saved explicit choice sets data-mode too, so it overrides the OS setting from then on;
-    // with no saved choice, only data-mode-resolved is set and the page follows the OS live.
+    // Light is the default for every visitor regardless of their OS setting; a saved explicit
+    // choice (from the toggle) is the only thing that can switch it to dark, and once saved it
+    // sticks instead of following the OS.
     (() => {
       let saved = null;
       try {
         saved = localStorage.getItem('mode');
       } catch {}
-      const resolved = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      const resolved = saved || 'light';
       const root = document.documentElement;
       root.dataset.modeResolved = resolved;
       if (saved) root.dataset.mode = saved;
@@ -50,7 +51,7 @@
         <h1>Hang a little<br />luck on your<span class="faces" id="faces" aria-hidden="true"></span><br />desktop.</h1>
 
         <div class="hero-ctas">
-          <a class="hero-cta-primary" href="#get">
+          <a class="hero-cta-primary" data-download="mac" href="https://github.com/bbalakrish-eng/dangly/releases/latest">
             <i><b class="ic" style="--i: url(icons/apple.svg)"></b></i>
             Download for macOS
             <b class="ic hero-cta-arrow" style="--i: url(icons/arrow-up-right.svg)"></b>
@@ -199,15 +200,16 @@
       <p>Charms, rituals and weather for your Mac and PC.</p>
     </div>
     <div class="foot-ctas">
-      <a class="get get-dark" href="#get">
+      <a class="get get-dark" data-download="mac" href="https://github.com/bbalakrish-eng/dangly/releases/latest">
         <i><b class="ic" style="--i: url(icons/apple.svg)"></b></i>
         Download for macOS
         <b class="ic get-arrow" style="--i: url(icons/arrow-up-right.svg)"></b>
       </a>
-      <span class="get get-soon" aria-disabled="true">
+      <a class="get" data-download="win" href="https://github.com/bbalakrish-eng/dangly/releases/latest">
         <i><b class="ic" style="--i: url(icons/windows.svg)"></b></i>
-        Coming soon for Windows
-      </span>
+        Download for Windows
+        <b class="ic get-arrow" style="--i: url(icons/arrow-up-right.svg)"></b>
+      </a>
     </div>
   </footer>
 

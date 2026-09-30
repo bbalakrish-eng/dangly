@@ -1,7 +1,7 @@
 {
   "name": "dangly",
   "productName": "Dangly",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "description": "Lucky charms, rituals and weather hanging on your desktop, for Mac and PC",
   "main": "src/main/main.js",
@@ -14,7 +14,9 @@
     "generate-windows-icon": "python3 scripts/generate-windows-icon.py",
     "install-dmgbuild": "pip3 install --user dmgbuild",
     "package:mac": "electron-builder --mac && python3 scripts/build-dmg.py",
-    "package:win": "electron-builder --win"
+    "package:mac:publish": "electron-builder --mac --publish always && python3 scripts/build-dmg.py",
+    "package:win": "electron-builder --win",
+    "package:win:publish": "electron-builder --win --publish always"
   },
   "devDependencies": {
     "electron": "^33.0.0",

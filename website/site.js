@@ -2,8 +2,8 @@
   // Pets (just Kitten) is fully removed from the website's own nav — not worth a category pill,
   // a quick-pick tag, or a showcase section for one item. The catalog entry itself is untouched
   // (the app still shows it); this just keeps it out of every website UI surface.
-  const CATEGORIES = ['Charms', 'Rituals', 'Atmosphere'];
-  const SHOWCASE_CATEGORIES = ['Charms', 'Rituals', 'Atmosphere'];
+  const CATEGORIES = ['Charms', 'Rituals', 'Atmosphere', 'Rage Room'];
+  const SHOWCASE_CATEGORIES = ['Charms', 'Rituals', 'Atmosphere', 'Rage Room'];
   const START_ID = 'maneki-neko';
 
   // Not ready to show yet: placeholder art, emoji stand-ins, unfinished rituals.
@@ -25,6 +25,7 @@
     Charms: { blurb: 'Hang one from the top of your screen. Drag it, flick it, and watch it swing.', layout: 'charms' },
     Rituals: { blurb: 'Small ceremonies, played out on your desktop. Click to begin.', layout: 'wide' },
     Atmosphere: { blurb: 'Weather that falls across your whole screen and parts around your cursor.', layout: 'mood' },
+    'Rage Room': { blurb: 'Let it out. Click anywhere on your screen.', layout: 'wide' },
   };
 
   const params = new URLSearchParams(location.search);
@@ -35,12 +36,12 @@
 
   /* ───────── Light/dark mode ─────────
      The actual color switch happens in CSS (see site.css's [data-mode] rules) and, for the very
-     first paint, an inline script in <head> — this only owns the toggle button and keeping the
-     page in sync with a live OS theme change while the visitor hasn't picked one explicitly. */
+     first paint, an inline script in <head> — this only owns the toggle button. Light is the
+     default for every visitor regardless of their OS setting; the page never follows a live OS
+     theme change on its own, only an explicit click of this toggle (saved from then on). */
   function initModeToggle() {
     const button = $('modeToggle');
     const root = document.documentElement;
-    const media = window.matchMedia('(prefers-color-scheme: dark)');
 
     const apply = (resolved) => {
       root.dataset.modeResolved = resolved;
@@ -50,17 +51,11 @@
 
     button.addEventListener('click', () => {
       const next = root.dataset.modeResolved === 'dark' ? 'light' : 'dark';
-      root.dataset.mode = next; // an explicit choice from here on, overriding the OS setting
+      root.dataset.mode = next; // an explicit choice from here on
       try {
         localStorage.setItem('mode', next);
       } catch {}
       apply(next);
-    });
-
-    // Only matters pre-choice: once the visitor has clicked the toggle, data-mode is set and
-    // this system-level event no longer changes anything (matching the <head> script's own logic).
-    media.addEventListener('change', (event) => {
-      if (!root.dataset.mode) apply(event.matches ? 'dark' : 'light');
     });
   }
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -96,6 +91,8 @@
         return 'Move your cursor through it';
       case 'pet':
         return 'Click to give it a pat';
+      case 'rage':
+        return 'Click anywhere on the stage';
       case 'ritual':
         if (item.ritual?.persistent) return 'It stays lit. Drag it anywhere';
         return item.ritual?.label ? `Click to ${item.ritual.label.charAt(0).toLowerCase()}${item.ritual.label.slice(1)}` : 'Drag it anywhere';
@@ -398,8 +395,48 @@
   }
   initReplayFrame();
 
+  // Points the download buttons at the actual GitHub release assets, resolved live from
+  // "latest" rather than hardcoded — a future release just works, nothing here needs editing.
+  // The href set in the HTML (the releases page itself) stays as the fallback if this fetch
+  // fails or hasn't resolved yet by the time someone clicks.
+  const REPO = 'bbalakrish-eng/dangly';
+
+  // Apple Silicon has been the default Mac since 2020, so it's the safe fallback when detection
+  // is inconclusive. WebGL's renderer string is the only reliable client-side signal (the UA
+  // string reports "Intel" on Apple Silicon too, under Rosetta).
+  function isAppleSilicon() {
+    try {
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      const info = gl && gl.getExtension('WEBGL_debug_renderer_info');
+      const renderer = info && gl.getParameter(info.UNMASKED_RENDERER_WEBGL);
+      if (renderer && /Intel/i.test(renderer)) return false;
+    } catch {}
+    return true;
+  }
+
+  async function initDownloads() {
+    const macLinks = document.querySelectorAll('a[data-download="mac"]');
+    const winLinks = document.querySelectorAll('a[data-download="win"]');
+    if (!macLinks.length && !winLinks.length) return;
+    try {
+      const response = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`);
+      if (!response.ok) return;
+      const release = await response.json();
+      const assets = release.assets || [];
+      const arch = isAppleSilicon() ? 'arm64' : 'x64';
+      const dmg = assets.find((a) => a.name.endsWith(`${arch}.dmg`)) || assets.find((a) => a.name.endsWith('.dmg'));
+      const exe = assets.find((a) => a.name.endsWith('.exe'));
+      if (dmg) macLinks.forEach((a) => (a.href = dmg.browser_download_url));
+      if (exe) winLinks.forEach((a) => (a.href = exe.browser_download_url));
+    } catch {
+      // Left pointing at the releases page (the href already in the HTML).
+    }
+  }
+
   async function init() {
     initModeToggle();
+    initDownloads();
     const response = await fetch('catalog/items.json');
     const catalog = await response.json();
     items = catalog.items.filter((item) => !HIDDEN_IDS.has(item.id));

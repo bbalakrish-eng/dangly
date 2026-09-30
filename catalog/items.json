@@ -354,6 +354,7 @@
       "description": "Click anywhere on your screen to put a bullet hole in it. Fades on its own after a few seconds.",
       "type": "rage",
       "glyph": "🔫",
+      "image": "assets/items/gun.webp",
       "rage": { "effect": "bullet" }
     }
   ]
