@@ -106,7 +106,12 @@
   // (not flat icons), so they read closer to real art than the plain line-icon fallback below,
   // which now only fires for the rare item with neither an image nor a glyph.
   function artFor(item, stackScale = 0.8) {
-    const art = make('div', item.category === 'Atmosphere' ? 'art art-mini' : 'art');
+    // Atmosphere and Rage Room both have art with no built-in "small" crop of its own (a weather
+    // glyph, or Gunshot's full revolver photo) — at tray-card size that reads oversized under the
+    // same max-width/max-height:100% every other item's already-tight art uses. See the tray-card
+    // rules in site.css this class feeds.
+    const isCompactArt = item.category === 'Atmosphere' || item.category === 'Rage Room';
+    const art = make('div', isCompactArt ? 'art art-mini' : 'art');
 
     if (item.chain) {
       const stack = make('div', 'stack');
