@@ -542,13 +542,15 @@ body[data-theme='wallpaper'] .vert { top: 46px; }
 .tray-card:active { transform: scale(0.98); }
 .tray-card[aria-pressed='true'] { outline: 2px solid var(--ink); outline-offset: -2px; background: var(--card-on); }
 .tray-card .art { height: 100%; width: 100%; }
-/* Atmosphere art (a glyph, or a leaf photo cropped tight with no margin of its own) has no
-   built-in breathing room the way a charm's own photo does, so at this card's small size it
-   reads bigger than its neighbors even under the same max-width/max-height:100%. A glyph also
-   has a fixed 104px font-size regardless of the container, which just overflows a card this
-   small. Scoped to .art-mini (Atmosphere only — see artFor) so charm/ritual photos in the same
-   tray keep their existing size. */
-.tray-card .art-mini .glyph { font-size: 40px; }
+/* A glyph (an emoji stand-in — Atmosphere art, or a Rage Room item like Fire that has no photo
+   of its own) has a fixed 104px font-size regardless of its container, which just overflows a
+   card this small — unlike a real photo, which already scales via max-width/max-height:100%.
+   Scoped to .glyph generally (not just Atmosphere's .art-mini) so any glyph-based item is
+   caught; charm/ritual photos in the same tray are untouched since they're never glyphs. */
+.tray-card .art .glyph { font-size: 40px; }
+/* Atmosphere specifically (a leaf photo cropped tight with no built-in breathing room) also
+   needs its actual photo capped, unlike other charm/ritual photos which already fit at this
+   card size. */
 .tray-card .art-mini img { max-width: 48px; max-height: 48px; }
 .tray-card em {
   position: absolute;
