@@ -1,12 +1,19 @@
 const { app } = require('electron');
 const { autoUpdater } = require('electron-updater');
 
-// Manual, one-click updates rather than the silent background-download-then-
-// prompt flow electron-updater defaults to: nothing happens until the user
-// presses "Check for updates" in Settings, and a found update downloads and
-// installs on its own from there without a second click.
+// Detect-and-link only, never a silent self-install: Squirrel.Mac (the
+// installer behind electron-updater's downloadUpdate()/quitAndInstall() on
+// macOS) requires the downloaded update to satisfy a code requirement tied
+// to the *currently running* app's own signature. We have no paid Apple
+// Developer ID, so the app is only ad-hoc signed — and ad-hoc signatures are
+// a unique hash per build, so a new build can never satisfy an old build's
+// requirement. Confirmed by reproducing it: the download completes, then
+// the actual install step fails with "code failed to satisfy specified code
+// requirement(s)" and silently reverts to the old version. Rather than
+// fight Squirrel.Mac's security model, this just checks for a newer version
+// and points the user at the GitHub release to download and drag-install
+// themselves, exactly like a first install.
 autoUpdater.autoDownload = false;
-autoUpdater.autoInstallOnAppQuit = false;
 
 let statusCallback = null;
 
@@ -35,20 +42,8 @@ function initUpdater(onStatus) {
   statusCallback = onStatus;
 
   autoUpdater.on('checking-for-update', () => emit({ state: 'checking' }));
-  autoUpdater.on('update-available', (info) => {
-    emit({ state: 'available', version: info.version });
-    autoUpdater.downloadUpdate();
-  });
+  autoUpdater.on('update-available', (info) => emit({ state: 'available', version: info.version }));
   autoUpdater.on('update-not-available', () => emit({ state: 'not-available' }));
-  autoUpdater.on('download-progress', (progress) => {
-    emit({ state: 'downloading', percent: Math.round(progress.percent) });
-  });
-  autoUpdater.on('update-downloaded', () => {
-    emit({ state: 'downloaded' });
-    // A brief pause rather than an instant quit — the status message above
-    // is the only warning the user gets that the app is about to relaunch.
-    setTimeout(() => autoUpdater.quitAndInstall(), 1500);
-  });
   autoUpdater.on('error', (err) => {
     console.error('Update check failed:', err);
     emit({ state: 'error', message: friendlyErrorMessage(err) });

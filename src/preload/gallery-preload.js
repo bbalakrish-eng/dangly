@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('galleryAPI', {
   onUpdateStatus: (callback) => {
     ipcRenderer.on('updates:status', (_event, status) => callback(status));
   },
+  openDownloadPage: () => ipcRenderer.send('updates:open-download-page'),
   getHideOnFullscreen: () => ipcRenderer.invoke('settings:get-hide-on-fullscreen'),
   setHideOnFullscreen: (value) => ipcRenderer.send('settings:set-hide-on-fullscreen', value),
 });

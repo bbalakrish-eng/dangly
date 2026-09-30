@@ -1,4 +1,4 @@
-const { app, ipcMain, BrowserWindow, screen, globalShortcut, powerMonitor } = require('electron');
+const { app, ipcMain, BrowserWindow, screen, globalShortcut, powerMonitor, shell } = require('electron');
 const path = require('path');
 const { pathToFileURL } = require('url');
 const { createOverlayWindow, sendActiveItem } = require('./overlay-window');
@@ -281,6 +281,12 @@ ipcMain.handle('assets:resolve', (_event, relativePath) => {
 
 ipcMain.handle('app:get-version', () => app.getVersion());
 ipcMain.handle('updates:check', () => checkForUpdates());
+// There's no in-place self-install on macOS without a paid Developer ID
+// (see updater.js) — "available" just opens the release page for a manual
+// download, the same drag-to-Applications install as day one.
+ipcMain.on('updates:open-download-page', () => {
+  shell.openExternal('https://github.com/bbalakrish-eng/dangly/releases/latest');
+});
 
 ipcMain.handle('settings:get-hide-on-fullscreen', () => settings.hideOnFullscreenVideo);
 ipcMain.on('settings:set-hide-on-fullscreen', (_event, value) => {

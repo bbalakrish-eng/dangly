@@ -12,6 +12,7 @@ const panelSettings = document.getElementById('panelSettings');
 const appVersionEl = document.getElementById('appVersion');
 const updateStatusEl = document.getElementById('updateStatus');
 const checkUpdatesBtn = document.getElementById('checkUpdatesBtn');
+const downloadUpdateBtn = document.getElementById('downloadUpdateBtn');
 const hideOnFullscreenToggle = document.getElementById('hideOnFullscreenToggle');
 
 const appearanceEmpty = document.getElementById('appearanceEmpty');
@@ -343,23 +344,21 @@ async function initMuteToggle() {
 }
 
 /* ───────── Settings: updates ─────────
-   Manual only — nothing downloads until the user presses the button. See
-   updater.js: a found update downloads and installs itself from there
-   without a second click, this just reflects each step of that back. */
+   Check-and-link only — there's no in-place self-install on macOS without a
+   paid Apple Developer ID (see updater.js for why), so an "available" result
+   surfaces a Download button pointing at the GitHub release instead of
+   downloading/restarting on its own. */
 function applyUpdateStatus(status) {
+  downloadUpdateBtn.classList.add('hidden');
   switch (status.state) {
     case 'checking':
       updateStatusEl.textContent = 'Checking for updates…';
       checkUpdatesBtn.disabled = true;
       break;
     case 'available':
-      updateStatusEl.textContent = `Downloading version ${status.version}…`;
-      break;
-    case 'downloading':
-      updateStatusEl.textContent = `Downloading update… ${status.percent}%`;
-      break;
-    case 'downloaded':
-      updateStatusEl.textContent = 'Update ready — restarting…';
+      updateStatusEl.textContent = `Dangly ${status.version} is available.`;
+      checkUpdatesBtn.disabled = false;
+      downloadUpdateBtn.classList.remove('hidden');
       break;
     case 'not-available':
       updateStatusEl.textContent = "You're on the latest version.";
@@ -379,6 +378,7 @@ async function initUpdates() {
     applyUpdateStatus({ state: 'checking' });
     window.galleryAPI.checkForUpdates();
   });
+  downloadUpdateBtn.addEventListener('click', () => window.galleryAPI.openDownloadPage());
 }
 
 /* ───────── Settings: hide on full-screen video ───────── */
