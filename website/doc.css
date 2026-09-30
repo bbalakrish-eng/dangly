@@ -39,6 +39,8 @@
   letter-spacing: -0.03em;
 }
 .doc-lede { margin: 18px 0 0; font-size: 17px; line-height: 1.6; color: var(--ink2); max-width: 56ch; }
+.doc-platform-ctas { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0 0; }
+.doc-meta { margin: 14px 0 0; font-size: 13px; color: var(--ink3); }
 .doc-article h2 {
   margin: 56px 0 14px;
   font-weight: 600;
@@ -54,7 +56,10 @@
 .doc-article ul { margin: 0 0 14px; padding-left: 20px; font-size: 15px; line-height: 1.7; color: var(--ink2); }
 .doc-article li { margin-bottom: 4px; }
 .doc-article strong { color: var(--ink); }
-.doc-article a { color: var(--ink); }
+/* Plain inline prose links only — excludes .get, which brings its own fixed button colors
+   (site.css's .get-dark sets white text on a dark pill) that this would otherwise outrank via
+   the extra element-selector specificity of "a" here. */
+.doc-article a:not(.get) { color: var(--ink); }
 
 .doc-callout {
   margin: 0 0 14px;
